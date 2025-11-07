@@ -154,8 +154,33 @@ created_at: TIMESTAMP
 
 **プロジェクト情報**:
 - Organization: create-hohoemi
-- Project: town-reviews
-- Region: ap-northeast-1 (東京)
+- Project ID: dpeeozdddgmjsnrgxdpz
+- Project Name: machi-event
+- Region: ap-northeast-1 (東京) ✨
+- Status: ACTIVE_HEALTHY
+- Database: PostgreSQL 17
+
+**Supabase MCP経由での操作**:
+```typescript
+// プロジェクト情報確認
+mcp__supabase__get_project({ id: "dpeeozdddgmjsnrgxdpz" })
+
+// テーブル一覧
+mcp__supabase__list_tables({ project_id: "dpeeozdddgmjsnrgxdpz" })
+
+// マイグレーション実行
+mcp__supabase__apply_migration({
+  project_id: "dpeeozdddgmjsnrgxdpz",
+  name: "migration_name",
+  query: "CREATE TABLE ..."
+})
+
+// SQL実行
+mcp__supabase__execute_sql({
+  project_id: "dpeeozdddgmjsnrgxdpz",
+  query: "SELECT * FROM events"
+})
+```
 
 ## セキュリティ要件
 
@@ -425,8 +450,97 @@ process.env.NEXT_PUBLIC_API_URL
 4. **共有機能**: Client Componentでブラウザ APIを使用
 5. **LINE通知**: Route Handlerで実装、Supabase連携
 
+## チケット管理とTodo
+
+### 推奨開発フロー
+
+**バックエンド実装と並行してフロントで確認する方式**を推奨します：
+
+```
+00. 最小限のフロントエンド構築 ← まずこれ！
+  ↓ シンプルなテーブル表示
+  ↓
+01-02. データベース実装
+  ↓ 画面でテーブルが見えることを確認 ✅
+  ↓
+03-04. スクレイピング実装
+  ↓ 画面でイベントが増えることを確認 ✅
+  ↓
+05-06. エラーハンドリング・Cron
+  ↓ ログページでエラーを確認 ✅
+  ↓
+07-12. 本格的なUI実装
+  ↓
+13-17. LINE連携・テスト・デプロイ
+```
+
+### チケットファイル
+
+`/docs`ディレクトリに機能毎のチケットファイルがあります:
+
+**Phase 0: 開発準備**
+- `00-minimal-frontend.md` - 最小限のフロントエンド（開発用・最優先）
+
+**Phase 1: 基盤構築**
+- `01-database-design.md` - データベース設計
+- `02-database-implementation.md` - データベース実装
+- `03-scraping-core.md` - スクレイピング基盤構築
+- `04-scraping-sites.md` - 22サイト対応
+- `05-error-handling.md` - エラーハンドリング強化
+- `06-cron-setup.md` - 定期実行（Cron）設定
+
+**Phase 2: Web UI**
+- `07-frontend-setup.md` - フロントエンド基盤構築
+- `08-event-list-pages.md` - イベント一覧ページ実装
+- `09-filtering-feature.md` - フィルタリング機能実装
+- `10-event-detail-page.md` - イベント詳細ページ実装
+- `11-share-feature.md` - シェア機能実装
+- `12-responsive-design.md` - レスポンシブデザイン対応
+
+**Phase 3: LINE連携**
+- `13-line-integration.md` - LINE連携基盤構築
+- `14-notification-feature.md` - LINE通知機能実装
+
+**Phase 4: 運用・保守**
+- `15-testing.md` - テスト実施
+- `16-deployment.md` - Vercelデプロイ
+- `17-operations.md` - 運用・保守
+
+### Todo管理ルール
+
+各チケットファイル内のTodoは以下の形式で管理:
+
+```markdown
+## タスク
+
+- [ ] 未完了のタスク
+- [×] 完了したタスク
+```
+
+**重要なルール**:
+1. タスクが完了したら `- [ ]` を `- [×]` に変更する
+2. 各チケットの「受け入れ基準」もTodo形式で管理
+3. 依存関係を確認してから作業開始
+4. 完了したチケットは次のチケットへ進む
+
+**進捗確認**:
+```bash
+# 全チケットの進捗確認
+grep -r "\- \[" docs/
+
+# 完了タスク数の確認
+grep -r "\- \[×\]" docs/ | wc -l
+```
+
 ## 重要な注意事項
 
+### ⚠️ 本番環境への注意
+- **town-reviews プロジェクト（xkmirweadwadcikvikdq）は本番稼働中**
+  - 絶対に触らない、変更しない、削除しない
+  - このプロジェクトは別サービスで現在運用中
+  - 作業対象は machi-event プロジェクト（dpeeozdddgmjsnrgxdpz）のみ
+
+### 開発上の注意
 - **スクレイピング対象**: 22サイト（飯田市および南信州エリア）
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
 - **エラーハンドリング**: サイト構造変更の検知機能を実装
