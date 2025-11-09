@@ -5,11 +5,11 @@ LINE、X（Twitter）、URLコピーでイベント情報を共有する機能�
 
 ## タスク
 
-- [ ] ShareButtonsコンポーネント作成
-- [ ] LINE共有実装
-- [ ] X（Twitter）共有実装
-- [ ] URLコピー機能実装
-- [ ] コピー完了通知表示
+- [×] ShareButtonsコンポーネント作成
+- [×] LINE共有実装
+- [×] X（Twitter）共有実装
+- [×] URLコピー機能実装
+- [×] コピー完了通知表示
 
 ## 実装
 
@@ -146,11 +146,11 @@ export default function ShareButtons({ event }: ShareButtonsProps) {
 ```
 
 ## 受け入れ基準
-- [ ] LINE共有が動作する
-- [ ] X（Twitter）共有が動作する
-- [ ] URLコピーが動作する
-- [ ] コピー完了通知が表示される
-- [ ] モバイルでWeb Share APIが使用される
+- [×] LINE共有が動作する
+- [×] X（Twitter）共有が動作する
+- [×] URLコピーが動作する
+- [×] コピー完了通知が表示される
+- [×] モバイルでWeb Share APIが使用される
 
 ## 依存関係
 - `10-event-detail-page.md` と並行実装可能
