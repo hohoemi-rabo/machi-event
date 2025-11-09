@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: 初期開発段階（基本テンプレートのみ構築済み）
+**プロジェクトステージ**: Phase 1完了・Phase 2準備中（基盤構築完了、UI実装開始前）
 
 ## 技術スタック
 
@@ -37,12 +37,36 @@ npm run lint
 ## プロジェクト構成
 
 ```
-src/app/              # Next.js App Router
-  ├── layout.tsx      # ルートレイアウト（Geistフォント設定）
-  ├── page.tsx        # ホームページ
-  └── globals.css     # グローバルスタイル（Tailwind設定）
+src/app/                         # Next.js App Router
+  ├── layout.tsx                 # ルートレイアウト（Geistフォント設定）
+  ├── page.tsx                   # ホームページ
+  └── globals.css                # グローバルスタイル（Tailwind設定）
 
-public/               # 静的ファイル
+supabase/functions/              # Supabase Edge Functions
+  └── scrape-events/             # スクレイピング機能（11ファイル）
+      ├── index.ts               # メインエントリーポイント
+      ├── types.ts               # 型定義
+      ├── utils.ts               # ユーティリティ関数
+      ├── error-types.ts         # カスタムエラークラス
+      ├── retry.ts               # リトライロジック
+      ├── structure-checker.ts   # 構造変更検知
+      ├── alert.ts               # Slack通知
+      ├── sites-config.ts        # 28サイト設定
+      ├── html-parser.ts         # HTMLパーサー
+      ├── rss-parser.ts          # RSSパーサー
+      └── date-utils.ts          # 日付パース
+
+docs/                            # チケット管理
+  ├── 00-minimal-frontend.md     # Phase 0 ✅
+  ├── 01-database-design.md      # Phase 1 ✅
+  ├── 02-database-implementation.md ✅
+  ├── 03-scraping-core.md        # ✅
+  ├── 04-scraping-sites.md       # ✅
+  ├── 05-error-handling.md       # ✅
+  ├── 06-cron-setup.md           # ⏳ 次のタスク
+  └── 07-17-*.md                 # Phase 2-4（未着手）
+
+public/                          # 静的ファイル
 ```
 
 **パスエイリアス**: `@/` は `src/` にマッピング（`tsconfig.json`で設定）
@@ -91,6 +115,8 @@ site_name: TEXT NOT NULL
 status: TEXT NOT NULL
 events_count: INTEGER
 error_message: TEXT
+error_type: TEXT
+stack_trace: TEXT
 created_at: TIMESTAMP
 ```
 
@@ -115,11 +141,14 @@ created_at: TIMESTAMP
 
 ## 主要機能要件
 
-### フェーズ1: 基盤構築
-- 22サイトからの自動スクレイピング（リスト形式約80%、テーブル形式約20%）
-- 1日1回深夜帯実行
+### フェーズ1: 基盤構築 ✅ 完了
+- 28サイトからの自動スクレイピング（RSS 7サイト、HTML 21サイト）
+- 1日1回深夜帯実行（Cron設定は次フェーズ）
 - 重複判定（タイトル＋開催日＋取得元）
 - エラーハンドリングとログ記録
+- リトライロジック（指数バックオフ）
+- 構造変更検知
+- Slack通知機能
 
 ### フェーズ2: Web UI
 - イベント一覧（今日/週/月）
@@ -182,6 +211,191 @@ mcp__supabase__execute_sql({
 })
 ```
 
+## Supabase Edge Functions アーキテクチャ
+
+**実行環境**: Deno 1.x ランタイム（TypeScript ネイティブサポート）
+
+### ファイル構成（11ファイル）
+
+```
+supabase/functions/scrape-events/
+├── index.ts              # メインエントリーポイント（182行）
+├── types.ts              # TypeScript型定義
+├── utils.ts              # ユーティリティ関数（122行）
+├── error-types.ts        # カスタムエラークラス
+├── retry.ts              # リトライロジック（指数バックオフ）
+├── structure-checker.ts  # サイト構造変更検知
+├── alert.ts              # Slack通知システム（206行）
+├── sites-config.ts       # 28サイト設定（RSS 7 + HTML 21）
+├── html-parser.ts        # CheerioベースのHTMLパーサー
+├── rss-parser.ts         # RSS 2.0/Atom フィードパーサー
+└── date-utils.ts         # 日本語日付パース
+```
+
+### 主要モジュールの役割
+
+#### index.ts（メインエントリーポイント）
+- Edge Function のHTTPハンドラー
+- 全サイトの並列スクレイピング実行
+- エラーハンドリングとログ記録
+- レスポンス生成
+
+```typescript
+Deno.serve(async (req) => {
+  const results = await Promise.all(
+    sites.map(site => scrapeWithRetry(site))
+  )
+  return new Response(JSON.stringify(results))
+})
+```
+
+#### sites-config.ts（28サイト設定）
+- サイト情報の一元管理
+- RSS/HTML の型区別
+- セレクター設定（HTML）
+- フィード形式指定（RSS）
+
+```typescript
+export const sites: SiteConfig[] = [
+  // RSS形式（7サイト）
+  { name: "飯田市", type: "rss", url: "...", feedType: "rss2" },
+
+  // HTML形式（21サイト）
+  { name: "阿南町", type: "html", url: "...",
+    selectors: { container: ".event-list", title: "h2", ... } }
+]
+```
+
+#### html-parser.ts（HTMLパーサー）
+- Cheerio による DOM 操作
+- セレクターベースの要素抽出
+- エラーハンドリング（要素不在検知）
+
+#### rss-parser.ts（RSSパーサー）
+- RSS 2.0 形式対応
+- Atom 形式対応
+- XML パース
+
+#### date-utils.ts（日本語日付パース）
+- 「令和6年12月25日」形式
+- 「2024年12月25日」形式
+- 「12月25日」形式（年補完）
+- 「12/25」形式（年補完）
+- ISO 8601形式
+
+#### utils.ts（ユーティリティ）
+- `isDuplicate()`: 重複判定（title + event_date + source_site）
+- `insertEvent()`: イベント挿入
+- `logScrapingResult()`: スクレイピング結果ログ
+- `logDetailedError()`: 詳細エラーログ（error_type, stack_trace含む）
+
+## エラーハンドリングシステム
+
+### エラー分類（ErrorType）
+
+```typescript
+enum ErrorType {
+  NETWORK = 'network',      // ネットワークエラー
+  PARSING = 'parsing',      // パースエラー
+  DATABASE = 'database',    // データベースエラー
+  VALIDATION = 'validation' // バリデーションエラー
+}
+```
+
+### リトライロジック
+
+**実装**: `retry.ts`
+
+```typescript
+// 最大3回リトライ
+// 初回: 2秒待機
+// 2回目: 4秒待機（2^1 × 2秒）
+// 3回目: 8秒待機（2^2 × 2秒）
+await retryWithBackoff(
+  () => scrapeFromSite(site),
+  { maxRetries: 3, initialDelay: 2000 }
+)
+```
+
+**対象エラー**:
+- ネットワークタイムアウト
+- 一時的なサーバーエラー（500系）
+- DNS解決失敗
+
+**リトライしないエラー**:
+- 404 Not Found
+- パースエラー（サイト構造変更）
+- バリデーションエラー
+
+### 構造変更検知
+
+**実装**: `structure-checker.ts`
+
+```typescript
+// 過去10回の平均取得件数の50%未満で異常検知
+const avgCount = calculateAverage(last10Results)
+if (currentCount < avgCount * 0.5) {
+  await sendAlert("Structure change detected")
+}
+```
+
+**検知条件**:
+- 取得件数が過去平均の50%未満
+- 連続してパースエラー発生
+
+### Slack通知機能
+
+**実装**: `alert.ts`（206行）
+
+**通知タイミング**:
+- 構造変更検知時
+- 連続エラー発生時（3回以上）
+- データベース接続エラー
+
+**設定**:
+```bash
+# 環境変数
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+**通知内容**:
+- サイト名
+- エラータイプ
+- エラーメッセージ
+- 発生時刻
+- スタックトレース（オプション）
+
+## デプロイメントワークフロー
+
+### Supabase Dashboard経由（推奨）
+
+1. https://dashboard.supabase.com にアクセス
+2. machi-event プロジェクト選択
+3. Edge Functions → scrape-events
+4. "Deploy new version" をクリック
+5. ファイルアップロード
+6. 環境変数設定（SLACK_WEBHOOK_URL等）
+7. デプロイ実行
+
+### Supabase CLI経由
+
+```bash
+# Edge Function デプロイ
+supabase functions deploy scrape-events
+
+# 環境変数設定
+supabase secrets set SLACK_WEBHOOK_URL=your-webhook-url
+
+# ローカルテスト
+supabase functions serve scrape-events
+curl http://localhost:54321/functions/v1/scrape-events
+```
+
+**注意点**:
+- CLI認証エラーが発生する場合は Dashboard 経由を使用
+- デプロイ後、Supabase Dashboard でログ確認
+- 初回実行は手動で動作確認を推奨
+
 ## セキュリティ要件
 
 - HTTPS通信
@@ -205,11 +419,42 @@ mcp__supabase__execute_sql({
 
 ## 現在の状態
 
+### Phase 0: 開発準備 ✅
 - ✅ Next.jsプロジェクトセットアップ完了
 - ✅ Tailwind CSS設定完了
 - ✅ TypeScript設定完了
 - ✅ Supabase MCP接続確認済み
-- ⏳ 機能実装は未着手（テンプレートコードのみ）
+- ✅ 最小限フロントエンド構築（`00-minimal-frontend.md`）
+
+### Phase 1: 基盤構築 ✅
+- ✅ データベース設計・実装（`01-02`）
+  - eventsテーブル、scraping_logsテーブル作成
+  - RLSポリシー設定完了
+- ✅ スクレイピング基盤構築（`03-04`）
+  - Edge Functions実装（11ファイル構成）
+  - 28サイト対応（RSS 7 + HTML 21）
+  - 日本語日付パース機能
+- ✅ エラーハンドリング強化（`05`）
+  - カスタムエラークラス
+  - リトライロジック（指数バックオフ）
+  - 構造変更検知
+  - Slack通知機能
+- ✅ Edge Functions デプロイ完了
+
+### Phase 1.5: 定期実行 ⏳ 次のタスク
+- ⏳ Cron設定（`06-cron-setup.md`）
+
+### Phase 2: Web UI ⏳ 未着手
+- ⏳ フロントエンド基盤構築（`07`）
+- ⏳ イベント一覧ページ（`08`）
+- ⏳ フィルタリング機能（`09`）
+- ⏳ イベント詳細ページ（`10`）
+- ⏳ シェア機能（`11`）
+- ⏳ レスポンシブデザイン（`12`）
+
+### Phase 3-4: LINE連携・運用 ⏳ 未着手
+- ⏳ LINE連携（`13-14`）
+- ⏳ テスト・デプロイ・運用（`15-17`）
 
 ## Next.js App Router ベストプラクティス
 
@@ -482,12 +727,12 @@ process.env.NEXT_PUBLIC_API_URL
 - `00-minimal-frontend.md` - 最小限のフロントエンド（開発用・最優先）
 
 **Phase 1: 基盤構築**
-- `01-database-design.md` - データベース設計
-- `02-database-implementation.md` - データベース実装
-- `03-scraping-core.md` - スクレイピング基盤構築
-- `04-scraping-sites.md` - 22サイト対応
-- `05-error-handling.md` - エラーハンドリング強化
-- `06-cron-setup.md` - 定期実行（Cron）設定
+- `01-database-design.md` - データベース設計 ✅
+- `02-database-implementation.md` - データベース実装 ✅
+- `03-scraping-core.md` - スクレイピング基盤構築 ✅
+- `04-scraping-sites.md` - 28サイト対応 ✅
+- `05-error-handling.md` - エラーハンドリング強化 ✅
+- `06-cron-setup.md` - 定期実行（Cron）設定 ⏳
 
 **Phase 2: Web UI**
 - `07-frontend-setup.md` - フロントエンド基盤構築
@@ -541,7 +786,9 @@ grep -r "\- \[×\]" docs/ | wc -l
   - 作業対象は machi-event プロジェクト（dpeeozdddgmjsnrgxdpz）のみ
 
 ### 開発上の注意
-- **スクレイピング対象**: 22サイト（飯田市および南信州エリア）
+- **スクレイピング対象**: 28サイト（飯田市および南信州エリア）
+  - RSS形式: 7サイト
+  - HTML形式: 21サイト
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
-- **エラーハンドリング**: サイト構造変更の検知機能を実装
+- **エラーハンドリング**: サイト構造変更の検知機能を実装済み
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人
