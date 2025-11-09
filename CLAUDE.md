@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1完了・Phase 2準備中（基盤構築完了、UI実装開始前）
+**プロジェクトステージ**: Phase 2進行中（Ticket 00-08完了、フロントエンド基盤・一覧ページ実装済み）
 
 ## 技術スタック
 
@@ -63,8 +63,11 @@ docs/                            # チケット管理
   ├── 03-scraping-core.md        # ✅
   ├── 04-scraping-sites.md       # ✅
   ├── 05-error-handling.md       # ✅
-  ├── 06-cron-setup.md           # ⏳ 次のタスク
-  └── 07-17-*.md                 # Phase 2-4（未着手）
+  ├── 06-cron-setup.md           # ⏳ 後回し
+  ├── 07-frontend-setup.md       # Phase 2 ✅
+  ├── 08-event-list-pages.md     # ✅
+  ├── 09-filtering-feature.md    # ⏳ 次のタスク
+  └── 10-17-*.md                 # Phase 2-4（未着手）
 
 public/                          # 静的ファイル
 ```
@@ -432,7 +435,9 @@ curl http://localhost:54321/functions/v1/scrape-events
   - RLSポリシー設定完了
 - ✅ スクレイピング基盤構築（`03-04`）
   - Edge Functions実装（11ファイル構成）
-  - 28サイト対応（RSS 7 + HTML 21）
+  - 28サイト対応（RSS 8 + HTML 20）
+  - RSS 1.0 (RDF) 形式対応（`<dc:date>`要素）
+  - RSS 2.0形式対応（`<pubDate>`要素）
   - 日本語日付パース機能
 - ✅ エラーハンドリング強化（`05`）
   - カスタムエラークラス
@@ -441,13 +446,22 @@ curl http://localhost:54321/functions/v1/scrape-events
   - Slack通知機能
 - ✅ Edge Functions デプロイ完了
 
-### Phase 1.5: 定期実行 ⏳ 次のタスク
+### Phase 1.5: 定期実行 ⏳ 後回し
 - ⏳ Cron設定（`06-cron-setup.md`）
 
-### Phase 2: Web UI ⏳ 未着手
-- ⏳ フロントエンド基盤構築（`07`）
-- ⏳ イベント一覧ページ（`08`）
-- ⏳ フィルタリング機能（`09`）
+### Phase 2: Web UI 🚧 進行中
+- ✅ フロントエンド基盤構築（`07`）
+  - Supabase クライアント（SSR対応）
+  - TypeScript型定義
+  - レイアウトコンポーネント（Header/Footer）
+  - 日付ユーティリティ
+  - Tailwind カスタムテーマ
+- ✅ イベント一覧ページ（`08`）
+  - 今日・今週・今月のイベント表示
+  - EventCardコンポーネント
+  - ISR（1時間ごと再生成）
+  - レスポンシブグリッドレイアウト
+- ⏳ フィルタリング機能（`09`）← 次のタスク
 - ⏳ イベント詳細ページ（`10`）
 - ⏳ シェア機能（`11`）
 - ⏳ レスポンシブデザイン（`12`）

@@ -15,14 +15,6 @@ export default function Header() {
                 href="/"
                 className="text-gray-700 hover:text-primary transition-colors font-medium"
               >
-                今日
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/week"
-                className="text-gray-700 hover:text-primary transition-colors font-medium"
-              >
                 今週
               </Link>
             </li>
@@ -32,6 +24,14 @@ export default function Header() {
                 className="text-gray-700 hover:text-primary transition-colors font-medium"
               >
                 今月
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/events"
+                className="text-gray-700 hover:text-primary transition-colors font-medium"
+              >
+                検索
               </Link>
             </li>
           </ul>
