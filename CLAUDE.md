@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 2進行中（Ticket 00-08完了、フロントエンド基盤・一覧ページ実装済み）
+**プロジェクトステージ**: Phase 2完了（Ticket 00-12完了、フロントエンド・UI実装完了。次: Phase 3 LINE連携）
 
 ## 技術スタック
 
@@ -37,10 +37,39 @@ npm run lint
 ## プロジェクト構成
 
 ```
-src/app/                         # Next.js App Router
-  ├── layout.tsx                 # ルートレイアウト（Geistフォント設定）
-  ├── page.tsx                   # ホームページ
-  └── globals.css                # グローバルスタイル（Tailwind設定）
+src/
+  ├── app/                       # Next.js App Router
+  │   ├── layout.tsx             # ルートレイアウト（FontSizeSwitcher含む）
+  │   ├── page.tsx               # トップページ（今週のイベント）
+  │   ├── globals.css            # グローバルスタイル（レスポンシブ対応）
+  │   ├── month/page.tsx         # 今月のイベント
+  │   ├── events/page.tsx        # イベント検索ページ
+  │   ├── event/[id]/
+  │   │   ├── page.tsx           # イベント詳細ページ
+  │   │   └── not-found.tsx      # 404ページ
+  │   └── logs/page.tsx          # スクレイピングログ
+  │
+  ├── components/
+  │   ├── layout/
+  │   │   ├── Header.tsx         # ヘッダー（モバイルメニュー対応）
+  │   │   └── Footer.tsx         # フッター
+  │   ├── events/
+  │   │   ├── EventCard.tsx      # イベントカード
+  │   │   ├── EventFilters.tsx   # フィルター（検索ページ用）
+  │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
+  │   │   └── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
+  │   └── ui/
+  │       └── FontSizeSwitcher.tsx # 文字サイズ切り替え
+  │
+  ├── lib/
+  │   ├── supabase/
+  │   │   ├── client.ts          # Supabaseクライアント（クライアント用）
+  │   │   └── server.ts          # Supabaseクライアント（サーバー用）
+  │   └── utils/
+  │       └── date.ts            # 日付ユーティリティ
+  │
+  └── types/
+      └── event.ts               # イベント型定義
 
 supabase/functions/              # Supabase Edge Functions
   └── scrape-events/             # スクレイピング機能（11ファイル）
@@ -53,7 +82,7 @@ supabase/functions/              # Supabase Edge Functions
       ├── alert.ts               # Slack通知
       ├── sites-config.ts        # 28サイト設定
       ├── html-parser.ts         # HTMLパーサー
-      ├── rss-parser.ts          # RSSパーサー
+      ├── rss-parser.ts          # RSSパーサー（RSS 1.0/2.0対応）
       └── date-utils.ts          # 日付パース
 
 docs/                            # チケット管理
@@ -66,9 +95,13 @@ docs/                            # チケット管理
   ├── 06-cron-setup.md           # ⏳ 後回し
   ├── 07-frontend-setup.md       # Phase 2 ✅
   ├── 08-event-list-pages.md     # ✅
-  ├── 09-filtering-feature.md    # ⏳ 次のタスク
-  └── 10-17-*.md                 # Phase 2-4（未着手）
+  ├── 09-filtering-feature.md    # ✅
+  ├── 10-event-detail-page.md    # ✅
+  ├── 11-share-feature.md        # ✅
+  ├── 12-responsive-design.md    # ✅
+  └── 13-17-*.md                 # Phase 3-4（未着手）
 
+next.config.ts                   # Next.js設定（画像最適化含む）
 public/                          # 静的ファイル
 ```
 
@@ -449,7 +482,7 @@ curl http://localhost:54321/functions/v1/scrape-events
 ### Phase 1.5: 定期実行 ⏳ 後回し
 - ⏳ Cron設定（`06-cron-setup.md`）
 
-### Phase 2: Web UI 🚧 進行中
+### Phase 2: Web UI ✅ 完了
 - ✅ フロントエンド基盤構築（`07`）
   - Supabase クライアント（SSR対応）
   - TypeScript型定義
@@ -457,14 +490,36 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 日付ユーティリティ
   - Tailwind カスタムテーマ
 - ✅ イベント一覧ページ（`08`）
-  - 今日・今週・今月のイベント表示
+  - 今週・今月のイベント表示（トップページは今週に変更）
   - EventCardコンポーネント
   - ISR（1時間ごと再生成）
   - レスポンシブグリッドレイアウト
-- ⏳ フィルタリング機能（`09`）← 次のタスク
-- ⏳ イベント詳細ページ（`10`）
-- ⏳ シェア機能（`11`）
-- ⏳ レスポンシブデザイン（`12`）
+- ✅ フィルタリング機能（`09`）
+  - 地域フィルター（ボタン形式 - トップページ、ドロップダウン - 検索ページ）
+  - キーワード検索
+  - 日付範囲フィルター
+  - URLパラメータ連携
+  - Next.js 15 async searchParams 対応
+- ✅ イベント詳細ページ（`10`）
+  - 動的ルート `/event/[id]`
+  - イベント詳細表示（タイトル、日時、場所、詳細）
+  - 外部リンクボタン
+  - 関連イベント表示（同地域・近い日付、最大3件）
+  - 動的メタデータ生成（SEO対応）
+  - 404ページ
+- ✅ シェア機能（`11`）
+  - LINE共有（URL Scheme）
+  - X（Twitter）共有（Web Intent API）
+  - Instagram共有（URLコピー方式）
+  - URLコピー（Clipboard API + フォールバック）
+  - Web Share API対応（モバイル）
+  - コピー完了通知（2-3秒表示）
+- ✅ レスポンシブデザイン（`12`）
+  - モバイルナビゲーション（ハンバーガーメニュー）
+  - 画像最適化設定（AVIF/WebP対応）
+  - タッチ操作対応（最小44x44pxタッチターゲット）
+  - 文字サイズ切り替え機能（高齢者対応）
+  - レスポンシブグリッド（モバイル1列、タブレット2列、PC3列）
 
 ### Phase 3-4: LINE連携・運用 ⏳ 未着手
 - ⏳ LINE連携（`13-14`）
