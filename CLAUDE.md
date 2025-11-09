@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 2完了（Ticket 00-12完了、フロントエンド・UI実装完了。次: Phase 3 LINE連携）
+**プロジェクトステージ**: Phase 2完了（Ticket 00-12完了、フロントエンド・UI実装完了）+ HTMLサイト設定作業中（3/20サイト完了）。次: 残りHTMLサイト設定 → Phase 3 LINE連携
 
 ## 技術スタック
 
@@ -178,13 +178,14 @@ created_at: TIMESTAMP
 ## 主要機能要件
 
 ### フェーズ1: 基盤構築 ✅ 完了
-- 28サイトからの自動スクレイピング（RSS 7サイト、HTML 21サイト）
+- 28サイトからの自動スクレイピング（RSS 8サイト、HTML 20サイト）
 - 1日1回深夜帯実行（Cron設定は次フェーズ）
 - 重複判定（タイトル＋開催日＋取得元）
 - エラーハンドリングとログ記録
 - リトライロジック（指数バックオフ）
 - 構造変更検知
 - Slack通知機能
+- **HTML設定状況**: 3/20サイト完了（南信州ナビ、阿智誘客促進協議会、天空の楽園）
 
 ### フェーズ2: Web UI
 - イベント一覧（今日/週/月）
@@ -262,7 +263,7 @@ supabase/functions/scrape-events/
 ├── retry.ts              # リトライロジック（指数バックオフ）
 ├── structure-checker.ts  # サイト構造変更検知
 ├── alert.ts              # Slack通知システム（206行）
-├── sites-config.ts       # 28サイト設定（RSS 7 + HTML 21）
+├── sites-config.ts       # 28サイト設定（RSS 8 + HTML 20）
 ├── html-parser.ts        # CheerioベースのHTMLパーサー
 ├── rss-parser.ts         # RSS 2.0/Atom フィードパーサー
 └── date-utils.ts         # 日本語日付パース
@@ -313,11 +314,16 @@ export const sites: SiteConfig[] = [
 - XML パース
 
 #### date-utils.ts（日本語日付パース）
-- 「令和6年12月25日」形式
-- 「2024年12月25日」形式
-- 「12月25日」形式（年補完）
-- 「12/25」形式（年補完）
-- ISO 8601形式
+**パターン優先順位**（年付き日付を優先）:
+1. 「2025年11月7日」（YYYY年MM月DD日）
+2. 「令和7年11月7日」（和暦）
+3. 「2025-11-07」（YYYY-MM-DD）
+4. 「2025/11/07」（YYYY/MM/DD）
+5. 「2025.08.22」（YYYY.MM.DD）← 重要
+6. 「11月7日」「11/7」（年なし、年補完）
+7. 「11.7」（年なし、ドット区切り）
+
+**重要**: 年付き形式を年なし形式より優先することで、タイトル内の「7月22日」より「2025.07.22」が優先的にマッチする
 
 #### utils.ts（ユーティリティ）
 - `isDuplicate()`: 重複判定（title + event_date + source_site）
@@ -401,6 +407,92 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 - 発生時刻
 - スタックトレース（オプション）
 
+## HTMLスクレイピングのトラブルシューティング
+
+### よくある問題と解決策
+
+#### 1. タイトルから日付が誤抽出される
+**問題**: 「7月22日（火）ナイトツアー運休のお知らせ 2025.07.22」から「7月22日」が先にマッチして誤った年（2026年）になる
+
+**解決策**:
+- html-parser.ts で `dateText` のみから日付抽出（タイトルから抽出しない）
+```typescript
+// ✅ 修正後
+const eventDate = dateText ? parseDateString(dateText) : null
+
+// ❌ 修正前
+const eventDate = parseDateString(dateText || title)  // タイトルも使ってしまう
+```
+
+#### 2. 年付き日付より年なし日付が優先される
+**問題**: date-utils.ts でパターンマッチの順序が不適切で、「11月7日」が「2025.11.07」より先にマッチ
+
+**解決策**: 年付き日付形式を年なし形式より前に配置
+```typescript
+// ✅ 正しい順序
+1. YYYY年MM月DD日
+2. 令和X年MM月DD日
+3. YYYY-MM-DD
+4. YYYY/MM/DD
+5. YYYY.MM.DD  ← 年付き優先
+6. MM月DD日    ← 年なしは後回し
+7. MM.DD
+```
+
+#### 3. 古いデータと新しいデータが重複する
+**問題**: コード修正後、正しい日付のデータと誤った日付のデータが両方残る
+- 例: 「7月22日 ナイトツアー運休」が2025-07-22と2026-07-22の2件存在
+
+**原因**: 重複判定が「タイトル + 日付 + ソースサイト」で行われるため、日付が違うと別イベントとして扱われる
+
+**解決策**: コード修正後は該当サイトのデータを削除してから再スクレイピング
+```sql
+-- 該当サイトのデータを全削除
+DELETE FROM events WHERE source_site = 'サイト名';
+
+-- または特定のレコードのみ削除
+DELETE FROM events WHERE id = 'レコードID';
+```
+
+#### 4. URL変更後に古いURLのデータが残る
+**問題**: sites-config.ts でURLを変更したが、古いURLのデータがDBに残る
+- 例: nightfes2025/news/ から information/news/ に変更
+
+**解決策**: 古いURLのデータを削除
+```sql
+DELETE FROM events
+WHERE source_site = 'サイト名'
+AND source_url LIKE '%古いURL%';
+```
+
+### HTMLサイト設定の推奨フロー
+
+1. **HTMLページ構造の確認**: ユーザーが実際のHTML構造を提供
+2. **sites-config.ts 設定**: セレクタ（selector）とフィールド（title, date, link）を設定
+3. **date-utils.ts 確認**: 日付形式が対応済みか確認、未対応なら追加
+4. **全11ファイルをデプロイ**: Task subagent を使用
+5. **Supabase Dashboard で Invoke**: 手動実行でテスト
+6. **http://localhost:3000/test で確認**: 結果を目視確認
+7. **問題があれば修正 → 古いデータ削除 → 再デプロイ**
+
+### HTMLサイト設定例
+
+```typescript
+// 南信州ナビ
+{
+  name: '南信州ナビ',
+  url: 'https://msnav.com/events/',
+  region: '飯田市',
+  type: 'html',
+  selector: '.xo-event-list dl',  // 親セレクタ + 繰り返し要素
+  fields: {
+    title: 'dd .title',            // タイトル要素
+    date: 'dt .event-date',        // 日付要素（dateTextとして抽出）
+    link: 'dd .title a'            // リンク要素
+  }
+}
+```
+
 ## デプロイメントワークフロー
 
 ### Supabase Dashboard経由（推奨）
@@ -471,13 +563,18 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 28サイト対応（RSS 8 + HTML 20）
   - RSS 1.0 (RDF) 形式対応（`<dc:date>`要素）
   - RSS 2.0形式対応（`<pubDate>`要素）
-  - 日本語日付パース機能
+  - 日本語日付パース機能（7パターン、年付き優先）
+  - **HTMLサイト設定進捗**: 3/20サイト完了
+    - ✅ 南信州ナビ（ul.list_blog__low li）
+    - ✅ 阿智誘客促進協議会（ul.list_topics li）
+    - ✅ 天空の楽園（ul.list_blog__low li）
+    - ⏳ 残り17サイト（阿智☆昼神観光局、根羽村、下条村、売木村、天龍村、豊丘村、大鹿村など）
 - ✅ エラーハンドリング強化（`05`）
   - カスタムエラークラス
   - リトライロジック（指数バックオフ）
   - 構造変更検知
   - Slack通知機能
-- ✅ Edge Functions デプロイ完了
+- ✅ Edge Functions デプロイ完了（**Version 23** - 最新）
 
 ### Phase 1.5: 定期実行 ⏳ 後回し
 - ⏳ Cron設定（`06-cron-setup.md`）
@@ -856,8 +953,10 @@ grep -r "\- \[×\]" docs/ | wc -l
 
 ### 開発上の注意
 - **スクレイピング対象**: 28サイト（飯田市および南信州エリア）
-  - RSS形式: 7サイト
-  - HTML形式: 21サイト
+  - RSS形式: 8サイト（全設定完了）
+  - HTML形式: 20サイト（3/20完了、残り17サイト設定中）
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
 - **エラーハンドリング**: サイト構造変更の検知機能を実装済み
+- **HTMLサイト設定**: ユーザーがHTML構造を提供 → セレクタ設定 → デプロイ → 検証のフロー
+- **データベースクリーンアップ**: コード修正後は古いデータを削除してから再スクレイピング
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人

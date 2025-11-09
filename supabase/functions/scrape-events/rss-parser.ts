@@ -41,13 +41,21 @@ function parseRssXml(
   const events: EventData[] = []
 
   // RSS 2.0 形式 & RSS 1.0 (RDF) 形式
-  $('item').each((_, element) => {
+  $('item').each((_i: number, element: any) => {
     try {
       const title = $(element).find('title').text().trim()
       const link = $(element).find('link').text().trim()
       const description = $(element).find('description').text().trim()
       const pubDate = $(element).find('pubDate').text().trim()
-      const dcDate = $(element).find('date').text().trim() // RSS 1.0 (dc:date)
+
+      // RSS 1.0 (dc:date) - Cheerioのxmlモードでは名前空間プレフィックスも含めて検索
+      let dcDate = ''
+      $(element).children().each((_i: number, child: any) => {
+        if (child.name === 'dc:date' || child.name === 'date') {
+          dcDate = $(child).text().trim()
+          return false // break
+        }
+      })
 
       if (!title) {
         return // タイトルがない場合はスキップ
@@ -85,7 +93,7 @@ function parseRssXml(
   })
 
   // Atom形式も対応
-  $('entry').each((_, element) => {
+  $('entry').each((_i: number, element: any) => {
     try {
       const title = $(element).find('title').text().trim()
       const link = $(element).find('link').attr('href') || ''

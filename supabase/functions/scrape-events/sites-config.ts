@@ -75,24 +75,36 @@ export const SITES: SiteConfig[] = [
     url: 'https://msnav.com/events/',
     region: '飯田市',
     type: 'html',
-    selector: '.event-list .event',
+    selector: '.xo-event-list dl',
     fields: {
-      title: '.title',
-      date: '.date',
-      link: 'a'
+      title: 'dd .title',
+      date: 'dt .event-date',
+      link: 'dd .title a'
     }
   },
   {
     name: '阿智誘客促進協議会',
     url: 'http://info.sva.jp/news_cat/news/',
     region: '阿智村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul.list_topics li',
+    fields: {
+      title: 'p.title',
+      date: 'p.day',
+      link: 'a'
+    }
   },
   {
     name: '天空の楽園',
-    url: 'https://sva.jp/nightfes2025/news/',
+    url: 'https://sva.jp/information/news/',
     region: '阿智村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul.list_blog__low li',
+    fields: {
+      title: 'h3',
+      date: 'div.blog_content',
+      link: 'a'
+    }
   },
   {
     name: '阿智☆昼神観光局（地域のお知らせ）',

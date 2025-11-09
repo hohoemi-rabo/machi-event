@@ -47,7 +47,9 @@ function parseHtml(html: string, config: SiteConfig): EventData[] {
           return // タイトルがない場合はスキップ
         }
 
-        const eventDate = parseDateString(dateText || title)
+        // 日付フィールドが指定されている場合は、そこから取得した日付のみを使用
+        // タイトルから日付を抽出しない（誤検出を防ぐため）
+        const eventDate = dateText ? parseDateString(dateText) : null
         if (!eventDate) {
           return // 日付が取得できない場合はスキップ
         }
