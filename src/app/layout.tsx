@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "まちイベ（開発版）",
-  description: "南信州イベント情報 - 開発版",
+  title: "南信州イベント情報 | まちイベ",
+  description: "南信州地域のイベント情報を一元管理。今日、週末、今月のイベントをチェック！",
 };
 
 export default function RootLayout({
@@ -25,18 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <nav className="bg-gray-800 text-white p-4">
-          <div className="container mx-auto flex gap-6">
-            <Link href="/" className="hover:text-gray-300">
-              イベント一覧
-            </Link>
-            <Link href="/logs" className="hover:text-gray-300">
-              スクレイピングログ
-            </Link>
-          </div>
-        </nav>
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );
