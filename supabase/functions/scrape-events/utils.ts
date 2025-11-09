@@ -1,5 +1,6 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { EventData } from './types.ts'
+import { ScrapingError } from './error-types.ts'
 
 /**
  * 重複判定: 同じタイトル、日付、情報元のイベントが既に存在するかチェック
@@ -54,25 +55,47 @@ export async function insertEvent(
 }
 
 /**
- * スクレイピングログを記録
+ * スクレイピングログを記録（エラー詳細対応版）
  */
 export async function logScrapingResult(
   supabase: SupabaseClient,
   siteName: string,
   status: 'success' | 'failure' | 'partial',
   eventsCount: number,
-  errorMessage?: string
+  errorMessage?: string,
+  errorType?: string,
+  stackTrace?: string
 ): Promise<void> {
   try {
     await supabase.from('scraping_logs').insert({
       site_name: siteName,
       status,
       events_count: eventsCount,
-      error_message: errorMessage || null
+      error_message: errorMessage || null,
+      error_type: errorType || null,
+      stack_trace: stackTrace || null
     })
   } catch (error) {
     console.error('Error logging scraping result:', error)
   }
+}
+
+/**
+ * エラーログを詳細記録
+ */
+export async function logDetailedError(
+  supabase: SupabaseClient,
+  error: ScrapingError
+): Promise<void> {
+  await logScrapingResult(
+    supabase,
+    error.siteName,
+    'failure',
+    0,
+    error.message,
+    error.errorType,
+    error.stack
+  )
 }
 
 /**
