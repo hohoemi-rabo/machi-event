@@ -1,38 +1,34 @@
-# 10. イベント詳細ページ実装
-
-## 概要
-個別イベントの詳細情報を表示するページを実装します。
-
-## タスク
-
-- [×] 動的ルート設定
-- [×] イベント詳細取得
-- [×] 詳細レイアウト実装
-- [×] 外部リンクボタン
-- [×] 関連イベント表示
-- [×] メタデータ動的生成（SEO）
-
-## 実装
-
-### 詳細ページ
-```typescript
-// src/app/event/[id]/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils/date'
 import ShareButtons from '@/components/events/ShareButtons'
+import EventCard from '@/components/events/EventCard'
+import type { Metadata } from 'next'
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
+// 1時間ごとに再生成
+export const revalidate = 3600
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params
   const supabase = await createClient()
+
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
-  if (!event) return {}
+  if (!event) {
+    return {
+      title: 'イベントが見つかりません | まちイベ'
+    }
+  }
 
   return {
     title: `${event.title} | まちイベ`,
@@ -40,17 +36,14 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
 }
 
-export default async function EventDetailPage({
-  params
-}: {
-  params: { id: string }
-}) {
+export default async function EventDetailPage({ params }: PageProps) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: event, error } = await supabase
     .from('events')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !event) {
@@ -64,11 +57,16 @@ export default async function EventDetailPage({
     .eq('region', event.region)
     .neq('id', event.id)
     .gte('event_date', event.event_date)
+    .order('event_date', { ascending: true })
+    .order('event_time', { ascending: true })
     .limit(3)
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link href="/" className="text-blue-500 hover:underline mb-4 block">
+      <Link
+        href="/"
+        className="inline-flex items-center text-blue-500 hover:text-blue-700 mb-6 transition-colors"
+      >
         ← 一覧に戻る
       </Link>
 
@@ -86,18 +84,18 @@ export default async function EventDetailPage({
 
         <div className="flex gap-2 mb-4">
           {event.is_new && (
-            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded">
+            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded font-medium">
               NEW
             </span>
           )}
-          <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded">
+          <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded font-medium">
             {event.region}
           </span>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6">{event.title}</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-900">{event.title}</h1>
 
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3 mb-6 text-gray-700">
           <div className="flex items-center gap-2">
             <span className="text-2xl">📅</span>
             <span className="text-lg">{formatDate(event.event_date)}</span>
@@ -117,35 +115,35 @@ export default async function EventDetailPage({
         </div>
 
         {event.detail && (
-          <div className="prose max-w-none mb-6">
-            <h2 className="text-xl font-semibold mb-3">詳細</h2>
-            <p className="whitespace-pre-wrap">{event.detail}</p>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-3 text-gray-900">詳細</h2>
+            <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{event.detail}</p>
           </div>
         )}
 
-        <div className="flex gap-4 mb-6">
+        <div className="mb-6">
           <a
             href={event.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
+            className="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
           >
-            詳細を見る
+            公式サイトで詳細を見る →
           </a>
         </div>
 
         <ShareButtons event={event} />
 
-        <p className="text-sm text-gray-500 mt-6">
+        <p className="text-sm text-gray-500 mt-6 pt-6 border-t">
           情報元: {event.source_site}
         </p>
       </div>
 
       {relatedEvents && relatedEvents.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6">関連イベント</h2>
+        <div className="mt-12 max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6 text-gray-900">関連イベント</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {relatedEvents.map(relatedEvent => (
+            {relatedEvents.map((relatedEvent) => (
               <EventCard key={relatedEvent.id} event={relatedEvent} />
             ))}
           </div>
@@ -154,15 +152,3 @@ export default async function EventDetailPage({
     </div>
   )
 }
-```
-
-## 受け入れ基準
-- [×] イベント詳細が正しく表示される
-- [×] 外部リンクが機能する
-- [×] 関連イベントが表示される
-- [×] メタデータが動的に生成される
-- [×] 404ページが適切に表示される
-
-## 依存関係
-- `08-event-list-pages.md` の完了が必要
-- `11-share-feature.md` と並行実装可能
