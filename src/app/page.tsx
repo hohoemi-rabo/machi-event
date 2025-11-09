@@ -28,7 +28,7 @@ export default async function HomePage() {
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-gray-900">
             <tr>
               <th className="px-4 py-2 border">日付</th>
               <th className="px-4 py-2 border">タイトル</th>
@@ -38,7 +38,7 @@ export default async function HomePage() {
               <th className="px-4 py-2 border">NEW</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-gray-900">
             {events?.map((event) => (
               <tr key={event.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 border whitespace-nowrap">

@@ -15,7 +15,7 @@ export default async function LogsPage() {
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-gray-900">
             <tr>
               <th className="px-4 py-2 border">日時</th>
               <th className="px-4 py-2 border">サイト名</th>
@@ -24,7 +24,7 @@ export default async function LogsPage() {
               <th className="px-4 py-2 border">エラー</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-gray-900">
             {logs?.map((log) => (
               <tr key={log.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 border whitespace-nowrap text-sm">
