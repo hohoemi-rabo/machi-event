@@ -40,32 +40,39 @@ function parseRssXml(
   const $ = load(xml, { xmlMode: true })
   const events: EventData[] = []
 
-  // RSS 2.0 形式
+  // RSS 2.0 形式 & RSS 1.0 (RDF) 形式
   $('item').each((_, element) => {
     try {
       const title = $(element).find('title').text().trim()
       const link = $(element).find('link').text().trim()
       const description = $(element).find('description').text().trim()
       const pubDate = $(element).find('pubDate').text().trim()
+      const dcDate = $(element).find('date').text().trim() // RSS 1.0 (dc:date)
 
       if (!title) {
         return // タイトルがない場合はスキップ
       }
 
-      // pubDateから日付を抽出（RFC 822形式）
-      // 例: "Mon, 07 Nov 2025 10:00:00 +0900"
-      const eventDate = parseDateFromRfc822(pubDate)
+      // 日付の優先順位: dc:date (RSS 1.0) → pubDate (RSS 2.0) → コンテンツから抽出
+      let eventDate = null
+
+      if (dcDate) {
+        eventDate = parseDateFromIso8601(dcDate) // dc:dateはISO 8601形式
+      } else if (pubDate) {
+        eventDate = parseDateFromRfc822(pubDate) // pubDateはRFC 822形式
+      }
+
       if (!eventDate) {
-        // pubDateから日付が取得できない場合、タイトルや説明文から抽出を試みる
-        const dateFromContent = extractDateFromText(title + ' ' + description)
-        if (!dateFromContent) {
-          return // 日付が取得できない場合はスキップ
-        }
+        eventDate = extractDateFromText(title + ' ' + description)
+      }
+
+      if (!eventDate) {
+        return // 日付が取得できない場合はスキップ
       }
 
       events.push({
         title,
-        event_date: eventDate || extractDateFromText(title + ' ' + description) || new Date().toISOString().split('T')[0],
+        event_date: eventDate,
         detail: description || undefined,
         source_url: link || '',
         source_site: siteName,

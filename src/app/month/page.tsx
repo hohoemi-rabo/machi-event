@@ -1,24 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
 import EventCard from '@/components/events/EventCard'
-import { formatDate } from '@/lib/utils/date'
+import { getMonthRange } from '@/lib/utils/date'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '今日のイベント | まちイベ',
-  description: '南信州地域の今日開催されるイベント情報'
+  title: '今月のイベント | まちイベ',
+  description: '南信州地域の今月開催されるイベント情報'
 }
 
 // 1時間ごとに再生成
 export const revalidate = 3600
 
-export default async function HomePage() {
+export default async function MonthPage() {
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const { start, end } = getMonthRange()
 
   const { data: events, error } = await supabase
     .from('events')
     .select('*')
-    .eq('event_date', today)
+    .gte('event_date', start.toISOString().split('T')[0])
+    .lte('event_date', end.toISOString().split('T')[0])
+    .order('event_date', { ascending: true })
     .order('event_time', { ascending: true })
 
   if (error) {
@@ -31,17 +33,17 @@ export default async function HomePage() {
     )
   }
 
+  const monthName = start.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">
-        今日のイベント
-      </h1>
-      <p className="text-gray-600 mb-6">{formatDate(today)}</p>
+      <h1 className="text-3xl font-bold mb-2">今月のイベント</h1>
+      <p className="text-gray-600 mb-6">{monthName}</p>
 
       {!events || events.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-gray-500 text-lg">今日のイベントはありません</p>
-          <p className="text-gray-400 text-sm mt-2">週間・月間イベントもチェックしてみてください</p>
+          <p className="text-gray-500 text-lg">今月のイベントはありません</p>
+          <p className="text-gray-400 text-sm mt-2">来月のイベントをお楽しみに</p>
         </div>
       ) : (
         <>

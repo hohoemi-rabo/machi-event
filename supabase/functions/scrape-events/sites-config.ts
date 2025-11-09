@@ -18,7 +18,7 @@ export interface SiteConfig {
 }
 
 export const SITES: SiteConfig[] = [
-  // ===== RSS対応サイト (7サイト) =====
+  // ===== RSS対応サイト (8サイト) =====
   {
     name: '高森町役場',
     url: 'https://www.town.nagano-takamori.lg.jp/oshirase/oshirase/rss.xml',
@@ -62,20 +62,14 @@ export const SITES: SiteConfig[] = [
     type: 'rss'
   },
 
-  // ===== HTMLサイト (21サイト) =====
   {
     name: '飯田市役所',
-    url: 'https://www.city.iida.lg.jp/life/3/16/index-2.html',
+    url: 'https://www.city.iida.lg.jp/rss/10/life3-16.xml',
     region: '飯田市',
-    type: 'html',
-    selector: '.event-item', // 実際の構造に合わせて調整
-    fields: {
-      title: '.event-title',
-      date: '.event-date',
-      place: '.event-place',
-      link: 'a'
-    }
+    type: 'rss'
   },
+
+  // ===== HTMLサイト (20サイト) =====
   {
     name: '南信州ナビ',
     url: 'https://msnav.com/events/',
