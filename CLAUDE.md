@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 2完了（Ticket 00-12完了、フロントエンド・UI実装完了）+ HTMLサイト設定作業中（3/20サイト完了）。次: 残りHTMLサイト設定 → Phase 3 LINE連携
+**プロジェクトステージ**: Phase 1-2完了（全23サイトスクレイピング完了、フロントエンド・UI実装完了）。次: Phase 3 LINE連携またはCron設定
 
 ## 技術スタック
 
@@ -47,7 +47,8 @@ src/
   │   ├── event/[id]/
   │   │   ├── page.tsx           # イベント詳細ページ
   │   │   └── not-found.tsx      # 404ページ
-  │   └── logs/page.tsx          # スクレイピングログ
+  │   ├── logs/page.tsx          # スクレイピングログ
+  │   └── test/page.tsx          # テストページ（スクレイピング確認用）
   │
   ├── components/
   │   ├── layout/
@@ -80,7 +81,7 @@ supabase/functions/              # Supabase Edge Functions
       ├── retry.ts               # リトライロジック
       ├── structure-checker.ts   # 構造変更検知
       ├── alert.ts               # Slack通知
-      ├── sites-config.ts        # 28サイト設定
+      ├── sites-config.ts        # 23サイト設定（RSS 8 + HTML 15）
       ├── html-parser.ts         # HTMLパーサー
       ├── rss-parser.ts          # RSSパーサー（RSS 1.0/2.0対応）
       └── date-utils.ts          # 日付パース
@@ -177,21 +178,27 @@ created_at: TIMESTAMP
 
 ## 主要機能要件
 
-### フェーズ1: 基盤構築 ✅ 完了
-- 28サイトからの自動スクレイピング（RSS 8サイト、HTML 20サイト）
+### フェーズ1: 基盤構築 ✅ 完全完了
+- **23サイトからの自動スクレイピング（RSS 8サイト、HTML 15サイト - 全設定完了）**
 - 1日1回深夜帯実行（Cron設定は次フェーズ）
 - 重複判定（タイトル＋開催日＋取得元）
 - エラーハンドリングとログ記録
 - リトライロジック（指数バックオフ）
 - 構造変更検知
 - Slack通知機能
-- **HTML設定状況**: 3/20サイト完了（南信州ナビ、阿智誘客促進協議会、天空の楽園）
+- 日本語日付パース（YYYY.MM.DD形式含む7パターン対応）
+- データベース: 498件のイベント（2025年1月時点）
+- Edge Functions: Version 23 デプロイ済み
 
-### フェーズ2: Web UI
+### フェーズ2: Web UI ✅ 完全完了
 - イベント一覧（今日/週/月）
 - フィルタリング（地域別、日付範囲、キーワード検索）
 - カード型UI
-- シェア機能（LINE、X、URLコピー）
+- シェア機能（LINE、X、Instagram、URLコピー）
+- レスポンシブデザイン（モバイル対応）
+- 文字サイズ切り替え（高齢者対応）
+- イベント詳細ページ（関連イベント表示）
+- テストページ（スクレイピング確認用）
 
 ### フェーズ3: LINE連携
 - LINE公式アカウント統合
@@ -286,20 +293,20 @@ Deno.serve(async (req) => {
 })
 ```
 
-#### sites-config.ts（28サイト設定）
-- サイト情報の一元管理
+#### sites-config.ts（23サイト設定）
+- サイト情報の一元管理（RSS 8 + HTML 15）
 - RSS/HTML の型区別
 - セレクター設定（HTML）
 - フィード形式指定（RSS）
 
 ```typescript
-export const sites: SiteConfig[] = [
-  // RSS形式（7サイト）
-  { name: "飯田市", type: "rss", url: "...", feedType: "rss2" },
+export const SITES: SiteConfig[] = [
+  // RSS形式（8サイト）
+  { name: "飯田市役所", type: "rss", url: "...", region: "飯田市" },
 
-  // HTML形式（21サイト）
-  { name: "阿南町", type: "html", url: "...",
-    selectors: { container: ".event-list", title: "h2", ... } }
+  // HTML形式（15サイト）
+  { name: "南信州ナビ", type: "html", url: "...", region: "飯田市",
+    selector: ".xo-event-list dl", fields: { title: "dd .title", ... } }
 ]
 ```
 
@@ -554,27 +561,35 @@ curl http://localhost:54321/functions/v1/scrape-events
 - ✅ Supabase MCP接続確認済み
 - ✅ 最小限フロントエンド構築（`00-minimal-frontend.md`）
 
-### Phase 1: 基盤構築 ✅
+### Phase 1: 基盤構築 ✅ 完全完了
 - ✅ データベース設計・実装（`01-02`）
   - eventsテーブル、scraping_logsテーブル作成
   - RLSポリシー設定完了
+  - 現在498件のイベントデータ（2025年1月時点）
 - ✅ スクレイピング基盤構築（`03-04`）
   - Edge Functions実装（11ファイル構成）
-  - 28サイト対応（RSS 8 + HTML 20）
+  - **23サイト全設定完了（RSS 8 + HTML 15）**
   - RSS 1.0 (RDF) 形式対応（`<dc:date>`要素）
   - RSS 2.0形式対応（`<pubDate>`要素）
-  - 日本語日付パース機能（7パターン、年付き優先）
-  - **HTMLサイト設定進捗**: 3/20サイト完了
-    - ✅ 南信州ナビ（ul.list_blog__low li）
-    - ✅ 阿智誘客促進協議会（ul.list_topics li）
-    - ✅ 天空の楽園（ul.list_blog__low li）
-    - ⏳ 残り17サイト（阿智☆昼神観光局、根羽村、下条村、売木村、天龍村、豊丘村、大鹿村など）
+  - 日本語日付パース機能（7パターン、年付き優先、YYYY.MM.DD対応）
+  - **HTMLサイト15/15完了**:
+    - ✅ 南信州ナビ、阿智誘客促進協議会、天空の楽園
+    - ✅ 阿智☆昼神観光局（地域/昼神観光局）
+    - ✅ 根羽村役場、下条村観光協会
+    - ✅ 売木村役場、売木村商工会
+    - ✅ 天龍村役場（お知らせ/行政情報/観光情報）
+    - ✅ 豊丘村役場
+    - ✅ 大鹿村役場（お知らせ）、大鹿村環境協会
 - ✅ エラーハンドリング強化（`05`）
   - カスタムエラークラス
   - リトライロジック（指数バックオフ）
   - 構造変更検知
   - Slack通知機能
 - ✅ Edge Functions デプロイ完了（**Version 23** - 最新）
+- ✅ テストページ実装（http://localhost:3000/test）
+  - 23サイト全体のスクレイピング状況確認
+  - フィルター機能（0件サイト非表示）
+  - スクレイピングサマリー表示
 
 ### Phase 1.5: 定期実行 ⏳ 後回し
 - ⏳ Cron設定（`06-cron-setup.md`）
@@ -952,11 +967,14 @@ grep -r "\- \[×\]" docs/ | wc -l
   - 作業対象は machi-event プロジェクト（dpeeozdddgmjsnrgxdpz）のみ
 
 ### 開発上の注意
-- **スクレイピング対象**: 28サイト（飯田市および南信州エリア）
+- **スクレイピング対象**: 23サイト（飯田市および南信州エリア）
   - RSS形式: 8サイト（全設定完了）
-  - HTML形式: 20サイト（3/20完了、残り17サイト設定中）
+  - HTML形式: 15サイト（全設定完了）
+  - 現在498件のイベントデータ（2025年1月時点）
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
 - **エラーハンドリング**: サイト構造変更の検知機能を実装済み
-- **HTMLサイト設定**: ユーザーがHTML構造を提供 → セレクタ設定 → デプロイ → 検証のフロー
+- **HTMLサイト設定フロー**: HTML構造確認 → セレクタ設定 → デプロイ → テストページで検証
 - **データベースクリーンアップ**: コード修正後は古いデータを削除してから再スクレイピング
+- **日付パース重要事項**: 年付き形式（YYYY.MM.DD等）を年なし形式より優先してマッチ
+- **テストページ**: http://localhost:3000/test で全サイトのスクレイピング状況確認可能
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人
