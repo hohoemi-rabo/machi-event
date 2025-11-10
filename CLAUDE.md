@@ -39,11 +39,12 @@ npm run lint
 ```
 src/
   ├── app/                       # Next.js App Router
-  │   ├── layout.tsx             # ルートレイアウト（FontSizeSwitcher含む）
-  │   ├── page.tsx               # トップページ（今週のイベント）
+  │   ├── layout.tsx             # ルートレイアウト（ScrollToTopButton含む）
+  │   ├── page.tsx               # トップページ（今週のイベント、2段階フィルター）
   │   ├── globals.css            # グローバルスタイル（レスポンシブ対応）
-  │   ├── month/page.tsx         # 今月のイベント
-  │   ├── events/page.tsx        # イベント検索ページ
+  │   ├── month/page.tsx         # 今月のイベント（2段階フィルター）
+  │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域カラム含む）
+  │   ├── search/page.tsx        # イベント検索ページ（旧 events/）
   │   ├── event/[id]/
   │   │   ├── page.tsx           # イベント詳細ページ
   │   │   └── not-found.tsx      # 404ページ
@@ -52,15 +53,16 @@ src/
   │
   ├── components/
   │   ├── layout/
-  │   │   ├── Header.tsx         # ヘッダー（モバイルメニュー対応）
+  │   │   ├── Header.tsx         # ヘッダー（モバイルメニュー対応、FontSizeSwitcher含む）
   │   │   └── Footer.tsx         # フッター
   │   ├── events/
   │   │   ├── EventCard.tsx      # イベントカード
-  │   │   ├── EventFilters.tsx   # フィルター（検索ページ用）
+  │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
   │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
   │   │   └── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
   │   └── ui/
-  │       └── FontSizeSwitcher.tsx # 文字サイズ切り替え
+  │       ├── FontSizeSwitcher.tsx # 文字サイズ切り替え（ヘッダー内）
+  │       └── ScrollToTopButton.tsx # ページトップスクロールボタン（右下固定）
   │
   ├── lib/
   │   ├── supabase/
@@ -166,15 +168,16 @@ is_active: BOOLEAN DEFAULT true
 created_at: TIMESTAMP
 ```
 
-## 画面構成（計画）
+## 画面構成
 
 | 画面 | URL | 説明 |
 |------|-----|------|
-| トップページ | `/` | 今日のイベント一覧 |
-| 週間イベント | `/week` | 今週のイベント |
-| 月間イベント | `/month` | 今月のイベント |
-| イベント詳細 | `/event/[id]` | 個別イベント詳細 |
-| 地域別 | `/region/[name]` | 地域フィルタリング |
+| トップページ | `/` | 今週のイベント一覧（2段階フィルター：地域→サイト） |
+| 月間イベント | `/month` | 今月のイベント一覧（2段階フィルター：地域→サイト） |
+| 全イベント | `/all` | 全イベント一覧（テーブル形式、スクレイピングサマリー付き） |
+| イベント検索 | `/search` | 地域・日付・キーワード検索（旧 /events） |
+| イベント詳細 | `/event/[id]` | 個別イベント詳細（関連イベント表示） |
+| テストページ | `/test` | スクレイピング確認用（開発用） |
 
 ## 主要機能要件
 
@@ -182,23 +185,34 @@ created_at: TIMESTAMP
 - **23サイトからの自動スクレイピング（RSS 8サイト、HTML 15サイト - 全設定完了）**
 - 1日1回深夜帯実行（Cron設定は次フェーズ）
 - 重複判定（タイトル＋開催日＋取得元）
+  - **Version 37で修正**: `.maybeSingle()` → `.limit(1)` で複数行対応
 - エラーハンドリングとログ記録
 - リトライロジック（指数バックオフ）
 - 構造変更検知
 - Slack通知機能
 - 日本語日付パース（YYYY.MM.DD形式含む7パターン対応）
-- データベース: 498件のイベント（2025年1月時点）
-- Edge Functions: Version 23 デプロイ済み
+- データベース: **590件**のイベント（2025年11月時点）
+  - 重複データ9件削除済み（2025年11月10日）
+- Edge Functions: **Version 37** デプロイ済み
+- 地域設定: 「その他」→「南信州」に変更（南信州ナビ用）
 
 ### フェーズ2: Web UI ✅ 完全完了
-- イベント一覧（今日/週/月）
-- フィルタリング（地域別、日付範囲、キーワード検索）
-- カード型UI
+- イベント一覧（今週/今月/全イベント）
+  - **2段階フィルター**: 地域選択 → サイト選択（トップ・今月ページ）
+  - カード型UI（トップ・今月ページ）
+  - テーブル型UI（全イベントページ、地域カラム含む）
+- フィルタリング機能
+  - 地域別（14地域、「南信州」含む）
+  - 日付範囲フィルター
+  - キーワード検索
+  - URL連携（/search ページ）
 - シェア機能（LINE、X、Instagram、URLコピー）
 - レスポンシブデザイン（モバイル対応）
-- 文字サイズ切り替え（高齢者対応）
+- 文字サイズ切り替え（ヘッダー内、高齢者対応）
+- **スクロールトップボタン**（右下固定、300px以上スクロールで表示）
 - イベント詳細ページ（関連イベント表示）
 - テストページ（スクレイピング確認用）
+- ページリネーム: /events → /search
 
 ### フェーズ3: LINE連携
 - LINE公式アカウント統合
@@ -305,7 +319,7 @@ export const SITES: SiteConfig[] = [
   { name: "飯田市役所", type: "rss", url: "...", region: "飯田市" },
 
   // HTML形式（15サイト）
-  { name: "南信州ナビ", type: "html", url: "...", region: "飯田市",
+  { name: "南信州ナビ", type: "html", url: "...", region: "南信州",  // 広域対応
     selector: ".xo-event-list dl", fields: { title: "dd .title", ... } }
 ]
 ```
@@ -334,6 +348,10 @@ export const SITES: SiteConfig[] = [
 
 #### utils.ts（ユーティリティ）
 - `isDuplicate()`: 重複判定（title + event_date + source_site）
+  - **Version 37で修正**: `.maybeSingle()` → `.limit(1)` に変更
+  - 複数の重複レコードが存在してもエラーにならず、正しく重複判定を実行
+  - 修正前: 重複データが複数あるとPGRST116エラーで `return false` になり重複登録
+  - 修正後: `.limit(1)` で最大1件取得、`data.length > 0` で判定
 - `insertEvent()`: イベント挿入
 - `logScrapingResult()`: スクレイピング結果ログ
 - `logDetailedError()`: 詳細エラーログ（error_type, stack_trace含む）
@@ -472,6 +490,41 @@ WHERE source_site = 'サイト名'
 AND source_url LIKE '%古いURL%';
 ```
 
+#### 5. 重複データの一括削除
+**問題**: Version 37以前のバグで重複データが蓄積
+- 例: 同じイベントが10件登録されている
+
+**解決策**: 最新のデータを残して古い重複を削除
+```sql
+-- 重複データを削除（最新の1件を残して古いものを削除）
+DELETE FROM events
+WHERE id IN (
+  SELECT id
+  FROM (
+    SELECT
+      id,
+      ROW_NUMBER() OVER (
+        PARTITION BY title, event_date, source_site
+        ORDER BY created_at DESC
+      ) as rn
+    FROM events
+  ) t
+  WHERE rn > 1
+);
+
+-- 削除後の確認
+SELECT
+  title,
+  event_date,
+  source_site,
+  COUNT(*) as count
+FROM events
+GROUP BY title, event_date, source_site
+HAVING COUNT(*) > 1;
+```
+
+**実績**: 2025年11月10日に9件の重複データを削除（飯田市役所）
+
 ### HTMLサイト設定の推奨フロー
 
 1. **HTMLページ構造の確認**: ユーザーが実際のHTML構造を提供
@@ -489,7 +542,7 @@ AND source_url LIKE '%古いURL%';
 {
   name: '南信州ナビ',
   url: 'https://msnav.com/events/',
-  region: '飯田市',
+  region: '南信州',  // 広域エリア対応
   type: 'html',
   selector: '.xo-event-list dl',  // 親セレクタ + 繰り返し要素
   fields: {
@@ -565,7 +618,8 @@ curl http://localhost:54321/functions/v1/scrape-events
 - ✅ データベース設計・実装（`01-02`）
   - eventsテーブル、scraping_logsテーブル作成
   - RLSポリシー設定完了
-  - 現在498件のイベントデータ（2025年1月時点）
+  - 現在**590件**のイベントデータ（2025年11月時点）
+  - 重複データ9件削除（2025年11月10日）
 - ✅ スクレイピング基盤構築（`03-04`）
   - Edge Functions実装（11ファイル構成）
   - **23サイト全設定完了（RSS 8 + HTML 15）**
@@ -573,7 +627,7 @@ curl http://localhost:54321/functions/v1/scrape-events
   - RSS 2.0形式対応（`<pubDate>`要素）
   - 日本語日付パース機能（7パターン、年付き優先、YYYY.MM.DD対応）
   - **HTMLサイト15/15完了**:
-    - ✅ 南信州ナビ、阿智誘客促進協議会、天空の楽園
+    - ✅ 南信州ナビ（region='南信州'）、阿智誘客促進協議会、天空の楽園
     - ✅ 阿智☆昼神観光局（地域/昼神観光局）
     - ✅ 根羽村役場、下条村観光協会
     - ✅ 売木村役場、売木村商工会
@@ -585,16 +639,17 @@ curl http://localhost:54321/functions/v1/scrape-events
   - リトライロジック（指数バックオフ）
   - 構造変更検知
   - Slack通知機能
-- ✅ Edge Functions デプロイ完了（**Version 23** - 最新）
+  - **重複判定修正（Version 37）**: `.maybeSingle()` → `.limit(1)`
+- ✅ Edge Functions デプロイ完了（**Version 37** - 最新）
 - ✅ テストページ実装（http://localhost:3000/test）
   - 23サイト全体のスクレイピング状況確認
-  - フィルター機能（0件サイト非表示）
+  - 2段階フィルター機能
   - スクレイピングサマリー表示
 
 ### Phase 1.5: 定期実行 ⏳ 後回し
 - ⏳ Cron設定（`06-cron-setup.md`）
 
-### Phase 2: Web UI ✅ 完了
+### Phase 2: Web UI ✅ 完全完了
 - ✅ フロントエンド基盤構築（`07`）
   - Supabase クライアント（SSR対応）
   - TypeScript型定義
@@ -602,15 +657,21 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 日付ユーティリティ
   - Tailwind カスタムテーマ
 - ✅ イベント一覧ページ（`08`）
-  - 今週・今月のイベント表示（トップページは今週に変更）
-  - EventCardコンポーネント
-  - ISR（1時間ごと再生成）
+  - **2段階フィルターUI実装**（地域→サイト選択）
+  - 今週・今月のイベント表示（Client Component化）
+  - 全イベントページ追加（/all、テーブル形式、地域カラム含む）
+  - EventCardコンポーネント（カード型UI）
   - レスポンシブグリッドレイアウト
+  - スクレイピングサマリー表示（/allページ）
 - ✅ フィルタリング機能（`09`）
-  - 地域フィルター（ボタン形式 - トップページ、ドロップダウン - 検索ページ）
-  - キーワード検索
-  - 日付範囲フィルター
-  - URLパラメータ連携
+  - 2段階フィルター（トップ・今月ページ）
+  - 地域フィルター（ボタン形式、14地域対応、「南信州」含む）
+  - 検索ページ（/search、旧/events）
+    - 地域ドロップダウン（bg-white, text-gray-900で視認性向上）
+    - キーワード検索
+    - 日付範囲フィルター
+    - URLパラメータ連携
+    - 地域順序統一（フィルターボタンと同じ順序）
   - Next.js 15 async searchParams 対応
 - ✅ イベント詳細ページ（`10`）
   - 動的ルート `/event/[id]`
@@ -630,8 +691,10 @@ curl http://localhost:54321/functions/v1/scrape-events
   - モバイルナビゲーション（ハンバーガーメニュー）
   - 画像最適化設定（AVIF/WebP対応）
   - タッチ操作対応（最小44x44pxタッチターゲット）
-  - 文字サイズ切り替え機能（高齢者対応）
+  - 文字サイズ切り替え機能（ヘッダー内配置、高齢者対応）
+  - **ScrollToTopButton実装**（右下固定、300px以上スクロールで表示）
   - レスポンシブグリッド（モバイル1列、タブレット2列、PC3列）
+  - ヘッダー固定（sticky top-0 z-50）
 
 ### Phase 3-4: LINE連携・運用 ⏳ 未着手
 - ⏳ LINE連携（`13-14`）
@@ -970,11 +1033,22 @@ grep -r "\- \[×\]" docs/ | wc -l
 - **スクレイピング対象**: 23サイト（飯田市および南信州エリア）
   - RSS形式: 8サイト（全設定完了）
   - HTML形式: 15サイト（全設定完了）
-  - 現在498件のイベントデータ（2025年1月時点）
+  - 現在**590件**のイベントデータ（2025年11月時点）
+  - Edge Functions: **Version 37** デプロイ済み
+- **地域設定**: 14地域対応（「南信州」含む）
+  - 南信州ナビ: region='南信州'（広域対応）
+  - その他サイト: 各市町村名
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
 - **エラーハンドリング**: サイト構造変更の検知機能を実装済み
+- **重複判定**: Version 37で修正済み（`.limit(1)` 使用）
 - **HTMLサイト設定フロー**: HTML構造確認 → セレクタ設定 → デプロイ → テストページで検証
-- **データベースクリーンアップ**: コード修正後は古いデータを削除してから再スクレイピング
+- **データベースクリーンアップ**:
+  - コード修正後は古いデータを削除してから再スクレイピング
+  - 重複データは定期的に確認・削除
 - **日付パース重要事項**: 年付き形式（YYYY.MM.DD等）を年なし形式より優先してマッチ
 - **テストページ**: http://localhost:3000/test で全サイトのスクレイピング状況確認可能
+- **UI実装**:
+  - 2段階フィルター（地域→サイト）
+  - スクロールトップボタン（右下固定）
+  - 文字サイズ切り替え（ヘッダー内）
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人
