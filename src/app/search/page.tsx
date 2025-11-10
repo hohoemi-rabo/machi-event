@@ -53,7 +53,7 @@ export default async function EventsPage({
     query = query.lte('event_date', params.dateTo)
   }
 
-  const { data: events, error } = await query
+  const { data: eventsData, error } = await query
 
   if (error) {
     console.error('Failed to fetch events:', error)
@@ -64,6 +64,42 @@ export default async function EventsPage({
       </div>
     )
   }
+
+  // 地域の順序定義（フィルターボタンと同じ順序）
+  const REGION_ORDER = [
+    '飯田市',
+    '南信州',
+    '高森町',
+    '松川町',
+    '阿智村',
+    '平谷村',
+    '根羽村',
+    '下条村',
+    '売木村',
+    '天龍村',
+    '泰阜村',
+    '喬木村',
+    '豊丘村',
+    '大鹿村'
+  ]
+
+  // イベントを地域順→日付順→時刻順でソート
+  const events = eventsData?.sort((a, b) => {
+    const regionIndexA = REGION_ORDER.indexOf(a.region || '')
+    const regionIndexB = REGION_ORDER.indexOf(b.region || '')
+
+    if (regionIndexA !== regionIndexB) {
+      return regionIndexA - regionIndexB
+    }
+
+    // 地域が同じ場合は日付順
+    if (a.event_date !== b.event_date) {
+      return (a.event_date || '').localeCompare(b.event_date || '')
+    }
+
+    // 日付も同じ場合は時刻順
+    return (a.event_time || '').localeCompare(b.event_time || '')
+  })
 
   // フィルター条件の表示用テキスト生成
   const getFilterSummary = () => {

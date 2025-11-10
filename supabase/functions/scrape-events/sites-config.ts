@@ -73,7 +73,7 @@ export const SITES: SiteConfig[] = [
   {
     name: '南信州ナビ',
     url: 'https://msnav.com/events/',
-    region: '飯田市',
+    region: '南信州',
     type: 'html',
     selector: '.xo-event-list dl',
     fields: {

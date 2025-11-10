@@ -1,57 +1,202 @@
-import { createClient } from '@/lib/supabase/server'
-import EventCard from '@/components/events/EventCard'
-import { getMonthRange } from '@/lib/utils/date'
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = {
-  title: '今月のイベント | まちイベ',
-  description: '南信州地域の今月開催されるイベント情報'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import EventCard from '@/components/events/EventCard'
+import type { Event } from '@/types/event'
+
+// 地域別サイトマッピング
+const REGION_SITES: Record<string, string[]> = {
+  飯田市: ['飯田市役所'],
+  南信州: ['南信州ナビ'],
+  高森町: ['高森町役場'],
+  松川町: ['松川町役場'],
+  阿智村: [
+    '阿智村役場',
+    '阿智誘客促進協議会',
+    '天空の楽園',
+    '阿智☆昼神観光局（地域のお知らせ）',
+    '阿智☆昼神観光局（昼神観光局からのお知らせ）',
+  ],
+  平谷村: ['平谷村役場（新着情報）', '平谷村役場（イベント）'],
+  根羽村: ['根羽村役場'],
+  下条村: ['下条村観光協会'],
+  売木村: ['売木村役場', '売木村商工会'],
+  天龍村: [
+    '天龍村役場（お知らせ）',
+    '天龍村役場（行政情報）',
+    '天龍村役場（観光情報）',
+  ],
+  泰阜村: ['泰阜村役場'],
+  喬木村: ['喬木村役場'],
+  豊丘村: ['豊丘村役場'],
+  大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
 }
 
-// 1時間ごとに再生成
-export const revalidate = 3600
+// 今月の日付範囲を取得
+function getMonthRange() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  start.setHours(0, 0, 0, 0)
 
-export default async function MonthPage() {
-  const supabase = await createClient()
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  end.setHours(23, 59, 59, 999)
+
+  return { start, end }
+}
+
+export default function MonthPage() {
+  const [allEvents, setAllEvents] = useState<Event[]>([])
+  const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
+  const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
+  const [loading, setLoading] = useState(true)
+  const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
+
   const { start, end } = getMonthRange()
+  const monthName = start.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
 
-  const { data: events, error } = await supabase
-    .from('events')
-    .select('*')
-    .gte('event_date', start.toISOString().split('T')[0])
-    .lte('event_date', end.toISOString().split('T')[0])
-    .order('event_date', { ascending: true })
-    .order('event_time', { ascending: true })
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .gte('event_date', start.toISOString().split('T')[0])
+        .lte('event_date', end.toISOString().split('T')[0])
+        .order('event_date', { ascending: true })
+        .order('event_time', { ascending: true })
 
-  if (error) {
-    console.error('Failed to fetch events:', error)
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4 text-red-600">エラーが発生しました</h1>
-        <p className="text-gray-600">{error.message}</p>
-      </div>
+      if (error) {
+        console.error('Error fetching events:', error)
+        setLoading(false)
+        return
+      }
+
+      setAllEvents(data || [])
+
+      // 各サイトのイベント件数をカウント（今月のイベントのみ）
+      const counts: Record<string, number> = {}
+      const allSites = Object.values(REGION_SITES).flat()
+      allSites.forEach((site) => {
+        counts[site] = (data || []).filter((e) => e.source_site === site).length
+      })
+      setSiteCounts(counts)
+      setLoading(false)
+    }
+
+    fetchEvents()
+  }, [start, end])
+
+  // 地域選択時の処理
+  const handleRegionSelect = (region: string) => {
+    setSelectedRegion(region)
+    // その地域の最初のサイトを選択（0件でないサイトを優先）
+    const sitesInRegion = REGION_SITES[region]
+    const firstSiteWithEvents = sitesInRegion.find(
+      (site) => (siteCounts[site] || 0) > 0
+    )
+    setSelectedSite(firstSiteWithEvents || sitesInRegion[0])
+  }
+
+  // 地域ごとのイベント件数合計を計算
+  const getRegionCount = (region: string) => {
+    return REGION_SITES[region].reduce(
+      (sum, site) => sum + (siteCounts[site] || 0),
+      0
     )
   }
 
-  const monthName = start.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+  // 選択したサイトの今月のイベントのみフィルタリング
+  const filteredEvents = allEvents.filter((e) => e.source_site === selectedSite)
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">今月のイベント</h1>
-      <p className="text-gray-600 mb-6">{monthName}</p>
+      {/* ヘッダー */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">今月のイベント</h1>
+        <p className="text-gray-600">{monthName}</p>
+      </div>
 
-      {!events || events.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-gray-500 text-lg">今月のイベントはありません</p>
-          <p className="text-gray-400 text-sm mt-2">来月のイベントをお楽しみに</p>
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">読み込み中...</p>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">{events.length}件のイベント</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
+          {/* 第1段階: 地域フィルター */}
+          <div className="bg-white rounded-lg shadow p-6 mb-4">
+            <h2 className="text-lg font-semibold mb-4">地域選択</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              {Object.keys(REGION_SITES).map((region) => {
+                const count = getRegionCount(region)
+                const isSelected = selectedRegion === region
+
+                return (
+                  <button
+                    key={region}
+                    onClick={() => handleRegionSelect(region)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <div className="truncate">{region}</div>
+                    <div className="text-xs mt-1">{count}件</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 第2段階: サイトフィルター */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4">
+              {selectedRegion}のサイト（
+              {REGION_SITES[selectedRegion].length}
+              サイト）
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {REGION_SITES[selectedRegion].map((site) => {
+                const count = siteCounts[site] || 0
+                const isSelected = selectedSite === site
+
+                return (
+                  <button
+                    key={site}
+                    onClick={() => setSelectedSite(site)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <div className="truncate">{site}</div>
+                    <div className="text-xs mt-1">{count}件</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* イベント一覧（カード形式） */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">
+              {selectedSite} のイベント（{filteredEvents.length}件）
+            </h2>
+
+            {filteredEvents.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <p className="text-gray-500 text-lg">このサイトの今月のイベントはありません</p>
+                <p className="text-gray-400 text-sm mt-2">来月のイベントをお楽しみに</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}

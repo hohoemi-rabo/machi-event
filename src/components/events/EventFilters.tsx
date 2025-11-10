@@ -3,22 +3,23 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
-// 実際のサイト設定から取得した地域リスト
+// 実際のサイト設定から取得した地域リスト（フィルターボタンと同じ順序）
 const REGIONS = [
   '飯田市',
+  '南信州',
   '高森町',
   '松川町',
   '阿智村',
   '平谷村',
-  '泰阜村',
-  '喬木村',
   '根羽村',
   '下条村',
   '売木村',
   '天龍村',
+  '泰阜村',
+  '喬木村',
   '豊丘村',
   '大鹿村'
-].sort()
+]
 
 export default function EventFilters() {
   const router = useRouter()
@@ -78,7 +79,7 @@ export default function EventFilters() {
           <select
             value={filters.region}
             onChange={(e) => setFilters({ ...filters, region: e.target.value })}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">すべての地域</option>
             {REGIONS.map(region => (
@@ -98,7 +99,7 @@ export default function EventFilters() {
             value={filters.keyword}
             onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
             onKeyDown={handleKeyDown}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -111,7 +112,7 @@ export default function EventFilters() {
             type="date"
             value={filters.dateFrom}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -124,7 +125,7 @@ export default function EventFilters() {
             type="date"
             value={filters.dateTo}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>

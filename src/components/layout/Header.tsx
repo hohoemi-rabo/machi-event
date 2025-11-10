@@ -11,7 +11,7 @@ export default function Header() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link
@@ -49,9 +49,21 @@ export default function Header() {
             </li>
             <li>
               <Link
-                href="/events"
+                href="/all"
                 className={`transition-colors font-medium ${
-                  isActive('/events')
+                  isActive('/all')
+                    ? 'text-primary font-bold'
+                    : 'text-gray-700 hover:text-primary'
+                }`}
+              >
+                全イベント
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/search"
+                className={`transition-colors font-medium ${
+                  isActive('/search')
                     ? 'text-primary font-bold'
                     : 'text-gray-700 hover:text-primary'
                 }`}
@@ -131,9 +143,22 @@ export default function Header() {
             </li>
             <li>
               <Link
-                href="/events"
+                href="/all"
                 className={`block py-3 px-4 rounded-md transition-colors ${
-                  isActive('/events')
+                  isActive('/all')
+                    ? 'bg-blue-50 text-primary font-bold'
+                    : 'hover:bg-gray-100'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                全イベント
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/search"
+                className={`block py-3 px-4 rounded-md transition-colors ${
+                  isActive('/search')
                     ? 'bg-blue-50 text-primary font-bold'
                     : 'hover:bg-gray-100'
                 }`}

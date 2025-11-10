@@ -16,14 +16,14 @@ export async function isDuplicate(
       .eq('title', event.title)
       .eq('event_date', event.event_date)
       .eq('source_site', event.source_site)
-      .maybeSingle()
+      .limit(1)
 
     if (error) {
       console.error('Error checking duplicate:', error)
       return false
     }
 
-    return data !== null
+    return data !== null && data.length > 0
   } catch (error) {
     console.error('Exception in isDuplicate:', error)
     return false

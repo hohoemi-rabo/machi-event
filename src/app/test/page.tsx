@@ -4,36 +4,41 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/types/event'
 
-// 23サイトの完全リスト（RSS 8 + HTML 15）
-const ALL_SITES = [
-  '飯田市役所',
-  '南信州ナビ',
-  '高森町役場',
-  '松川町役場',
-  '阿智村役場',
-  '阿智誘客促進協議会',
-  '天空の楽園',
-  '阿智☆昼神観光局（地域のお知らせ）',
-  '阿智☆昼神観光局（昼神観光局からのお知らせ）',
-  '平谷村役場（新着情報）',
-  '平谷村役場（イベント）',
-  '根羽村役場',
-  '下条村観光協会',
-  '売木村役場',
-  '売木村商工会',
-  '天龍村役場（お知らせ）',
-  '天龍村役場（行政情報）',
-  '天龍村役場（観光情報）',
-  '泰阜村役場',
-  '喬木村役場',
-  '豊丘村役場',
-  '大鹿村役場（お知らせ）',
-  '大鹿村環境協会',
-]
+// 地域別サイトマッピング
+const REGION_SITES: Record<string, string[]> = {
+  飯田市: ['飯田市役所'],
+  南信州: ['南信州ナビ'],
+  高森町: ['高森町役場'],
+  松川町: ['松川町役場'],
+  阿智村: [
+    '阿智村役場',
+    '阿智誘客促進協議会',
+    '天空の楽園',
+    '阿智☆昼神観光局（地域のお知らせ）',
+    '阿智☆昼神観光局（昼神観光局からのお知らせ）',
+  ],
+  平谷村: ['平谷村役場（新着情報）', '平谷村役場（イベント）'],
+  根羽村: ['根羽村役場'],
+  下条村: ['下条村観光協会'],
+  売木村: ['売木村役場', '売木村商工会'],
+  天龍村: [
+    '天龍村役場（お知らせ）',
+    '天龍村役場（行政情報）',
+    '天龍村役場（観光情報）',
+  ],
+  泰阜村: ['泰阜村役場'],
+  喬木村: ['喬木村役場'],
+  豊丘村: ['豊丘村役場'],
+  大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
+}
+
+// 全サイトリスト（23サイト）
+const ALL_SITES = Object.values(REGION_SITES).flat()
 
 export default function TestPage() {
   const [events, setEvents] = useState<Event[]>([])
-  const [selectedSite, setSelectedSite] = useState<string>(ALL_SITES[0])
+  const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
+  const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
 
@@ -65,6 +70,25 @@ export default function TestPage() {
     fetchEvents()
   }, [])
 
+  // 地域選択時の処理
+  const handleRegionSelect = (region: string) => {
+    setSelectedRegion(region)
+    // その地域の最初のサイトを選択（0件でないサイトを優先）
+    const sitesInRegion = REGION_SITES[region]
+    const firstSiteWithEvents = sitesInRegion.find(
+      (site) => (siteCounts[site] || 0) > 0
+    )
+    setSelectedSite(firstSiteWithEvents || sitesInRegion[0])
+  }
+
+  // 地域ごとのイベント件数合計を計算
+  const getRegionCount = (region: string) => {
+    return REGION_SITES[region].reduce(
+      (sum, site) => sum + (siteCounts[site] || 0),
+      0
+    )
+  }
+
   const filteredEvents = events.filter((e) => e.source_site === selectedSite)
 
   return (
@@ -88,31 +112,64 @@ export default function TestPage() {
           </div>
         ) : (
           <>
-            {/* サイトフィルターボタン */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4">
-                スクレイピング対象サイト（23サイト）
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {ALL_SITES.filter((site) => (siteCounts[site] || 0) > 0).map((site) => {
-                  const count = siteCounts[site] || 0
-                  const isSelected = selectedSite === site
+            {/* 第1段階: 地域フィルター */}
+            <div className="bg-white rounded-lg shadow p-6 mb-4">
+              <h2 className="text-lg font-semibold mb-4">地域選択（14地域）</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {Object.keys(REGION_SITES).map((region) => {
+                  const count = getRegionCount(region)
+                  const isSelected = selectedRegion === region
+
+                  // 0件の地域は非表示
+                  if (count === 0) return null
 
                   return (
                     <button
-                      key={site}
-                      onClick={() => setSelectedSite(site)}
+                      key={region}
+                      onClick={() => handleRegionSelect(region)}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isSelected
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-red-500 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <div className="truncate">{site}</div>
+                      <div className="truncate">{region}</div>
                       <div className="text-xs mt-1">{count}件</div>
                     </button>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* 第2段階: サイトフィルター */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {selectedRegion}のサイト（
+                {REGION_SITES[selectedRegion].filter((s) => (siteCounts[s] || 0) > 0).length}
+                サイト）
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {REGION_SITES[selectedRegion]
+                  .filter((site) => (siteCounts[site] || 0) > 0)
+                  .map((site) => {
+                    const count = siteCounts[site] || 0
+                    const isSelected = selectedSite === site
+
+                    return (
+                      <button
+                        key={site}
+                        onClick={() => setSelectedSite(site)}
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <div className="truncate">{site}</div>
+                        <div className="text-xs mt-1">{count}件</div>
+                      </button>
+                    )
+                  })}
               </div>
             </div>
 
