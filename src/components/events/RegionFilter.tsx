@@ -2,27 +2,31 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 
-// 実際のサイト設定から取得した地域リスト
-const REGIONS = [
-  '飯田市',
-  '高森町',
-  '松川町',
-  '阿智村',
-  '平谷村',
-  '泰阜村',
-  '喬木村',
-  '根羽村',
-  '下条村',
-  '売木村',
-  '天龍村',
-  '豊丘村',
-  '大鹿村'
-].sort()
+interface RegionFilterProps {
+  availableRegions?: string[]
+}
 
-export default function RegionFilter() {
+export default function RegionFilter({ availableRegions }: RegionFilterProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentRegion = searchParams.get('region') || ''
+
+  // availableRegionsが渡されていない場合は全地域を表示（後方互換性）
+  const regions = availableRegions || [
+    '飯田市',
+    '高森町',
+    '松川町',
+    '阿智村',
+    '平谷村',
+    '泰阜村',
+    '喬木村',
+    '根羽村',
+    '下条村',
+    '売木村',
+    '天龍村',
+    '豊丘村',
+    '大鹿村'
+  ].sort()
 
   const handleRegionClick = (region: string) => {
     if (region) {
@@ -46,7 +50,7 @@ export default function RegionFilter() {
         >
           すべて
         </button>
-        {REGIONS.map(region => (
+        {regions.map(region => (
           <button
             key={region}
             onClick={() => handleRegionClick(region)}

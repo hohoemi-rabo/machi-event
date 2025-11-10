@@ -97,20 +97,7 @@ export function parseDateString(dateText: string): string | null {
     if (month < 1 || month > 12 || day < 1 || day > 31) return null
 
     const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1
-    const currentDay = now.getDate()
-
-    let year = currentYear
-
-    // 同じ月の場合は日付まで比較
-    if (month === currentMonth) {
-      if (day < currentDay) {
-        year = currentYear + 1  // 今月だが過去の日付 → 来年
-      }
-    } else if (month < currentMonth) {
-      year = currentYear + 1  // 過去の月 → 来年
-    }
+    const year = now.getFullYear()  // 常に今年を使用
 
     if (!isValidDate(year, month, day)) return null
 
@@ -127,20 +114,7 @@ export function parseDateString(dateText: string): string | null {
     if (month < 1 || month > 12 || day < 1 || day > 31) return null
 
     const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1
-    const currentDay = now.getDate()
-
-    let year = currentYear
-
-    // 同じ月の場合は日付まで比較
-    if (month === currentMonth) {
-      if (day < currentDay) {
-        year = currentYear + 1  // 今月だが過去の日付 → 来年
-      }
-    } else if (month < currentMonth) {
-      year = currentYear + 1  // 過去の月 → 来年
-    }
+    const year = now.getFullYear()  // 常に今年を使用
 
     if (!isValidDate(year, month, day)) return null
 

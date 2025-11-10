@@ -110,102 +110,144 @@ export const SITES: SiteConfig[] = [
     name: '阿智☆昼神観光局（地域のお知らせ）',
     url: 'https://hirugamionsen.jp/',
     region: '阿智村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul.list_info li',
+    fields: {
+      title: 'h3.title',
+      date: 'p.day',
+      link: 'a'
+    }
   },
   {
     name: '阿智☆昼神観光局（昼神観光局からのお知らせ）',
     url: 'https://hirugamionsen.jp/news/',
     region: '阿智村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul.list_blog li',
+    fields: {
+      title: 'div.blog_r p.title',
+      date: 'div.blog_r p.day',
+      link: 'a'
+    }
   },
   {
     name: '根羽村役場',
     url: 'https://www.nebamura.jp/nebatopics/news/',
     region: '根羽村',
-    type: 'html'
+    type: 'html',
+    selector: 'div.news_cont ul li',
+    fields: {
+      title: 'a:nth-child(2)',
+      date: 'span.date',
+      link: 'a:nth-child(2)'
+    }
   },
   {
     name: '下条村観光協会',
     url: 'https://shimojo-kanko.jp/news.html',
     region: '下条村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#mainlist ul li',
+    fields: {
+      title: 'a',
+      date: 'a',
+      link: 'a'
+    }
   },
   {
     name: '売木村役場',
     url: 'https://www.urugi.jp/latest_news/',
     region: '売木村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#list a.entry-card-wrap',
+    fields: {
+      title: 'h2.entry-card-title',
+      date: 'span.entry-date',
+      link: '' // 親要素のa tagのhrefを使用
+    }
   },
   {
     name: '売木村商工会',
     url: 'https://urugisho.jp/information.html',
     region: '売木村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#mainlist ul li',
+    fields: {
+      title: 'a',
+      date: 'span.fs11',
+      link: 'a'
+    }
   },
   {
     name: '天龍村役場（お知らせ）',
-    url: 'https://www.vill-tenryu.jp/category/notice/',
+    url: 'https://www.vill-tenryu.jp/',
     region: '天龍村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#top_info_content ul li',
+    fields: {
+      title: 'a',
+      date: 'a',
+      link: 'a'
+    }
   },
   {
     name: '天龍村役場（行政情報）',
-    url: 'https://www.vill-tenryu.jp/category/notice/administrative/government_info/',
+    url: 'https://www.vill-tenryu.jp/administrative/',
     region: '天龍村',
-    type: 'html'
-  },
-  {
-    name: '天龍村役場（くらしと手続き）',
-    url: 'https://www.vill-tenryu.jp/category/notice/administrative/living_info/',
-    region: '天龍村',
-    type: 'html'
-  },
-  {
-    name: '天龍村役場（健康・福祉）',
-    url: 'https://www.vill-tenryu.jp/category/notice/administrative/health_welfare/',
-    region: '天龍村',
-    type: 'html'
-  },
-  {
-    name: '天龍村役場（子育て・教育）',
-    url: 'https://www.vill-tenryu.jp/category/notice/administrative/education/',
-    region: '天龍村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#g_info_content ul li',
+    fields: {
+      title: 'a',
+      date: 'a',
+      link: 'a'
+    }
   },
   {
     name: '天龍村役場（観光情報）',
-    url: 'https://www.vill-tenryu.jp/category/tourism/tourism_info/',
+    url: 'https://www.vill-tenryu.jp/tourism/',
     region: '天龍村',
-    type: 'html'
-  },
-  {
-    name: '天龍村（イベント総合案内）',
-    url: 'https://www.vill-tenryu.jp/tourism/event/event/',
-    region: '天龍村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul#k_news_body li',
+    fields: {
+      title: 'a',
+      date: 'a',
+      link: 'a'
+    }
   },
   {
     name: '豊丘村役場',
     url: 'https://www.vill.nagano-toyooka.lg.jp/',
     region: '豊丘村',
-    type: 'html'
-  },
-  {
-    name: '豊丘村役場（とよおか祭り情報）',
-    url: 'https://www.vill.nagano-toyooka.lg.jp/02kankou/toyookamatsuri/',
-    region: '豊丘村',
-    type: 'html'
+    type: 'html',
+    selector: '.news__list li.news__list__item',
+    fields: {
+      title: 'dd a',
+      date: 'dt',
+      link: 'dd a'
+    }
   },
   {
     name: '大鹿村役場（お知らせ）',
     url: 'http://www.vill.ooshika.nagano.jp/category/whatsnew/',
     region: '大鹿村',
-    type: 'html'
+    type: 'html',
+    selector: 'div#in_contents ul.ichiran_ul li',
+    fields: {
+      title: 'p:nth-child(2)',
+      date: 'p:first-child',
+      link: 'a.new-link'
+    }
   },
   {
     name: '大鹿村環境協会',
-    url: 'https://ooshika-kanko.com/',
+    url: 'https://ooshika-kanko.com/eventlist/',
     region: '大鹿村',
-    type: 'html'
+    type: 'html',
+    selector: 'ul.wp-block-post-template li.wp-block-post',
+    fields: {
+      title: 'h3.wp-block-post-title a',
+      date: 'h3.wp-block-post-title a',
+      link: 'h3.wp-block-post-title a'
+    }
   }
 ]

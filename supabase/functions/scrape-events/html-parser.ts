@@ -41,7 +41,17 @@ function parseHtml(html: string, config: SiteConfig): EventData[] {
                      $(element).text().trim()
         const dateText = $(element).find(config.fields!.date || '').text().trim()
         const place = $(element).find(config.fields!.place || '').text().trim()
-        const link = $(element).find(config.fields!.link || 'a').attr('href') || ''
+
+        // linkの取得: 子要素のaタグを探し、なければ自身がaタグかチェック
+        let link = ''
+        if (config.fields!.link) {
+          link = $(element).find(config.fields!.link).attr('href') || ''
+        } else {
+          link = $(element).find('a').attr('href') || ''
+          if (!link && $(element).is('a')) {
+            link = $(element).attr('href') || ''
+          }
+        }
 
         if (!title) {
           return // タイトルがない場合はスキップ
