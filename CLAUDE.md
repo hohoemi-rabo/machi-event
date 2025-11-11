@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1-2完了（全23サイトスクレイピング完了、フロントエンド・UI実装完了）。次: Phase 3 LINE連携またはCron設定
+**プロジェクトステージ**: Phase 1-2完了、Phase 3基本実装完了（LINE連携Webhook・通知機能実装済み）。次: Cron設定・LIFF実装・地域選択拡張
 
 ## 技術スタック
 
@@ -46,8 +46,11 @@ src/
   │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域色適用、ヘッダー色連動）
   │   ├── search/page.tsx        # イベント検索ページ（旧 events/）
   │   ├── event/[id]/
-  │   │   ├── page.tsx           # イベント詳細ページ
+  │   │   ├── page.tsx           # イベント詳細ページ（NotifyButton含む）
   │   │   └── not-found.tsx      # 404ページ
+  │   ├── api/
+  │   │   └── notifications/
+  │   │       └── route.ts       # 通知登録API（POST/GET/DELETE）
   │   ├── logs/page.tsx          # スクレイピングログ
   │   └── test/page.tsx          # テストページ（スクレイピング確認用）
   │
@@ -59,7 +62,8 @@ src/
   │   │   ├── EventCard.tsx      # イベントカード（地域色背景、NEWバッジ虹色・右端配置）
   │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
   │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
-  │   │   └── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
+  │   │   ├── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
+  │   │   └── NotifyButton.tsx   # LINE通知登録ボタン（LIFF未実装）
   │   └── ui/
   │       ├── FontSizeSwitcher.tsx # 文字サイズ切り替え（金色ボタン、ヘッダー内）
   │       └── ScrollToTopButton.tsx # ページトップスクロールボタン（右下固定）
@@ -75,18 +79,33 @@ src/
       └── event.ts               # イベント型定義
 
 supabase/functions/              # Supabase Edge Functions
-  └── scrape-events/             # スクレイピング機能（11ファイル）
-      ├── index.ts               # メインエントリーポイント
-      ├── types.ts               # 型定義
-      ├── utils.ts               # ユーティリティ関数
-      ├── error-types.ts         # カスタムエラークラス
-      ├── retry.ts               # リトライロジック
-      ├── structure-checker.ts   # 構造変更検知
-      ├── alert.ts               # Slack通知
-      ├── sites-config.ts        # 23サイト設定（RSS 8 + HTML 15）
-      ├── html-parser.ts         # HTMLパーサー
-      ├── rss-parser.ts          # RSSパーサー（RSS 1.0/2.0対応）
-      └── date-utils.ts          # 日付パース
+  ├── scrape-events/             # スクレイピング機能（11ファイル）
+  │   ├── index.ts               # メインエントリーポイント
+  │   ├── types.ts               # 型定義
+  │   ├── utils.ts               # ユーティリティ関数
+  │   ├── error-types.ts         # カスタムエラークラス
+  │   ├── retry.ts               # リトライロジック
+  │   ├── structure-checker.ts   # 構造変更検知
+  │   ├── alert.ts               # Slack通知
+  │   ├── sites-config.ts        # 23サイト設定（RSS 8 + HTML 15）
+  │   ├── html-parser.ts         # HTMLパーサー
+  │   ├── rss-parser.ts          # RSSパーサー（RSS 1.0/2.0対応）
+  │   └── date-utils.ts          # 日付パース
+  │
+  ├── line-webhook/              # LINE Webhook（5ファイル、Version 8）
+  │   ├── index.ts               # Webhookエントリーポイント（署名検証）
+  │   ├── types.ts               # LINE型定義
+  │   ├── validators.ts          # HMAC-SHA256署名検証（Web Crypto API）
+  │   ├── line-client.ts         # LINEメッセージ送信（プッシュ・リプライ）
+  │   └── line-handler.ts        # イベントハンドラー（follow/unfollow/message/postback）
+  │
+  ├── send-daily-notifications/  # 定期通知（3ファイル）
+  │   ├── index.ts               # 毎朝8時新着イベント送信
+  │   ├── event-fetcher.ts       # ユーザー地域のイベント取得（最大3件）
+  │   └── message-builder.ts     # Flexメッセージ生成
+  │
+  └── send-event-reminders/      # 個別通知（1ファイル）
+      └── index.ts               # 開催前日リマインダー送信
 
 docs/                            # チケット管理
   ├── 00-minimal-frontend.md     # Phase 0 ✅
@@ -159,13 +178,35 @@ stack_trace: TEXT
 created_at: TIMESTAMP
 ```
 
-### line_usersテーブル（将来実装）
+### line_usersテーブル ✅ 実装済み
 ```sql
 id: UUID (PK)
-line_user_id: TEXT UNIQUE
-regions: TEXT[]
+line_user_id: TEXT UNIQUE NOT NULL
+regions: TEXT[] DEFAULT ARRAY['飯田市']
 is_active: BOOLEAN DEFAULT true
-created_at: TIMESTAMP
+created_at: TIMESTAMP DEFAULT NOW()
+updated_at: TIMESTAMP DEFAULT NOW()
+```
+
+### event_notificationsテーブル ✅ 実装済み
+```sql
+id: UUID (PK)
+line_user_id: TEXT NOT NULL
+event_id: UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE
+notify_date: DATE NOT NULL
+is_sent: BOOLEAN DEFAULT false
+created_at: TIMESTAMP DEFAULT NOW()
+UNIQUE(line_user_id, event_id)
+```
+
+### notification_logsテーブル ✅ 実装済み
+```sql
+id: UUID (PK)
+notification_type: TEXT NOT NULL  -- 'daily_events' or 'event_reminders'
+total_users: INTEGER NOT NULL
+success_count: INTEGER NOT NULL
+failure_count: INTEGER NOT NULL
+created_at: TIMESTAMP DEFAULT NOW()
 ```
 
 ## 画面構成
@@ -229,10 +270,29 @@ created_at: TIMESTAMP
 - テストページ（スクレイピング確認用）
 - ページリネーム: /events → /search
 
-### フェーズ3: LINE連携
-- LINE公式アカウント統合
-- 毎朝8時通知
-- 地域別フィルター設定
+### フェーズ3: LINE連携 ✅ 基本実装完了
+- ✅ LINE公式アカウント統合（Webhook設定完了）
+- ✅ Webhook Edge Function実装（Version 8）
+  - 友だち追加/ブロック処理
+  - メッセージ応答（地域選択、イベント情報案内）
+  - Postback処理（地域設定ボタン）
+  - HMAC-SHA256署名検証（Web Crypto API）
+- ✅ 定期通知Edge Function実装
+  - 毎朝8時に新着イベント送信（最大3件）
+  - ユーザー地域に合わせたフィルタリング
+  - Flexメッセージ形式
+- ✅ 個別イベント通知Edge Function実装
+  - 開催前日の朝8時にリマインダー送信
+  - event_notificationsテーブル連携
+- ✅ 通知登録API実装（POST/GET/DELETE）
+- ✅ NotifyButtonコンポーネント実装（イベント詳細ページ）
+- ✅ 地域選択機能動作確認（line_usersテーブルにデータ保存確認済み）
+
+**未完了：**
+- ⏳ Cron設定（毎朝8時自動実行）
+- ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応）
+- ⏳ LIFF実装（Web→LINE ID取得→通知登録の完全自動化）
+- ⏳ リッチメニュー設定（オプション）
 
 ### フェーズ4: 運用管理
 - スクレイピングログ確認

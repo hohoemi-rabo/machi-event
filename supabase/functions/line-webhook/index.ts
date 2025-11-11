@@ -37,7 +37,9 @@ serve(async (req) => {
       return new Response('Server configuration error', { status: 500 })
     }
 
-    if (!validateSignature(body, signature, channelSecret)) {
+    const isValidSignature = await validateSignature(body, signature, channelSecret)
+
+    if (!isValidSignature) {
       console.error('Invalid signature')
       return new Response('Invalid signature', { status: 403 })
     }
@@ -70,9 +72,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error processing webhook:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: errorMessage
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

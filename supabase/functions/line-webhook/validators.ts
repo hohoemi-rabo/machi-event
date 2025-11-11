@@ -1,5 +1,3 @@
-import { createHmac } from 'node:crypto'
-
 /**
  * LINE Webhook署名検証
  * @param body - リクエストボディ
@@ -7,18 +5,33 @@ import { createHmac } from 'node:crypto'
  * @param channelSecret - LINEチャネルシークレット
  * @returns 署名が有効な場合true
  */
-export function validateSignature(
+export async function validateSignature(
   body: string,
   signature: string | null,
   channelSecret: string
-): boolean {
+): Promise<boolean> {
   if (!signature) {
     return false
   }
 
-  const hash = createHmac('sha256', channelSecret)
-    .update(body)
-    .digest('base64')
+  // Web Crypto APIを使用してHMAC-SHA256を計算
+  const encoder = new TextEncoder()
+  const keyData = encoder.encode(channelSecret)
+  const messageData = encoder.encode(body)
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+
+  const signatureBuffer = await crypto.subtle.sign('HMAC', key, messageData)
+
+  // Base64エンコード
+  const signatureArray = Array.from(new Uint8Array(signatureBuffer))
+  const hash = btoa(String.fromCharCode(...signatureArray))
 
   return hash === signature
 }

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { formatDate } from '@/lib/utils/date'
 import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 import ShareButtons from '@/components/events/ShareButtons'
+import NotifyButton from '@/components/events/NotifyButton'
 import EventCard from '@/components/events/EventCard'
 import type { Metadata } from 'next'
 
@@ -165,6 +166,8 @@ export default async function EventDetailPage({ params }: PageProps) {
         </div>
 
         <ShareButtons event={event} />
+
+        <NotifyButton eventId={event.id} eventTitle={event.title} />
 
         <p
           className="text-sm mt-8 pt-6 border-t-2 font-medium"
