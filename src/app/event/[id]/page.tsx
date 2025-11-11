@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils/date'
+import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 import ShareButtons from '@/components/events/ShareButtons'
 import EventCard from '@/components/events/EventCard'
 import type { Metadata } from 'next'
@@ -61,36 +62,60 @@ export default async function EventDetailPage({ params }: PageProps) {
     .order('event_time', { ascending: true })
     .limit(3)
 
+  const regionColor = getRegionColor(event.region)
+  const lightBg = getRegionLightBg(event.region)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Link
         href="/"
-        className="inline-flex items-center text-blue-500 hover:text-blue-700 mb-6 transition-colors"
+        className="inline-flex items-center font-medium mb-6 transition-all hover:opacity-80 px-4 py-2 rounded-lg"
+        style={{
+          background: 'linear-gradient(135deg, #B19CD9 0%, #9370DB 50%, #8B5CF6 100%)',
+          color: '#FFFFFF'
+        }}
       >
         ← 一覧に戻る
       </Link>
 
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+      <div
+        className="rounded-xl shadow-xl p-8 max-w-4xl mx-auto border-2"
+        style={{
+          backgroundColor: lightBg,
+          borderColor: regionColor.bg
+        }}
+      >
         {event.image_url && (
           <div className="relative w-full h-96 mb-6">
             <Image
               src={event.image_url}
               alt={event.title}
               fill
-              className="object-cover rounded-lg"
+              className="object-cover rounded-xl shadow-lg"
             />
           </div>
         )}
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex justify-between items-center mb-6">
+          <span
+            className="text-sm px-3 py-2 rounded-lg font-medium shadow-md"
+            style={{
+              backgroundColor: regionColor.bg,
+              color: regionColor.text
+            }}
+          >
+            {event.region}
+          </span>
           {event.is_new && (
-            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded font-medium">
+            <span
+              className="text-white text-sm px-3 py-2 rounded-lg font-bold new-badge-rainbow shadow-md"
+              style={{
+                textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)'
+              }}
+            >
               NEW
             </span>
           )}
-          <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded font-medium">
-            {event.region}
-          </span>
         </div>
 
         <h1 className="text-3xl font-bold mb-6 text-gray-900">{event.title}</h1>
@@ -115,33 +140,48 @@ export default async function EventDetailPage({ params }: PageProps) {
         </div>
 
         {event.detail && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-3 text-gray-900">詳細</h2>
-            <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{event.detail}</p>
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+              📝 詳細情報
+            </h2>
+            <div className="bg-white/80 rounded-lg p-4 shadow-sm">
+              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{event.detail}</p>
+            </div>
           </div>
         )}
 
-        <div className="mb-6">
+        <div className="mb-8">
           <a
             href={event.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+            className="inline-block text-white px-8 py-4 rounded-xl font-bold transition-all hover:shadow-xl hover:-translate-y-0.5 shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)'
+            }}
           >
-            公式サイトで詳細を見る →
+            🔗 公式サイトで詳細を見る →
           </a>
         </div>
 
         <ShareButtons event={event} />
 
-        <p className="text-sm text-gray-500 mt-6 pt-6 border-t">
-          情報元: {event.source_site}
+        <p
+          className="text-sm mt-8 pt-6 border-t-2 font-medium"
+          style={{
+            borderColor: regionColor.bg,
+            color: regionColor.bg
+          }}
+        >
+          📌 情報元: {event.source_site}
         </p>
       </div>
 
       {relatedEvents && relatedEvents.length > 0 && (
         <div className="mt-12 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900">関連イベント</h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+            🔄 関連イベント
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedEvents.map((relatedEvent) => (
               <EventCard key={relatedEvent.id} event={relatedEvent} />

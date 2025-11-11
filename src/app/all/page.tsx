@@ -108,23 +108,38 @@ export default function AllEventsPage() {
         </div>
       ) : (
         <>
-          {/* スクレイピングサマリー */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">スクレイピングサマリー</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600">総イベント数</div>
-                <div className="text-3xl font-bold text-blue-600">{events.length}件</div>
+          {/* データ集計 */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">📊 データ集計</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div
+                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)'
+                }}
+              >
+                <div className="text-sm text-white/90 font-medium mb-2">📊 総イベント数</div>
+                <div className="text-4xl font-bold text-white">{events.length}件</div>
               </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600">スクレイピング成功サイト</div>
-                <div className="text-3xl font-bold text-green-600">
-                  {Object.values(siteCounts).filter((c) => c > 0).length} / 23サイト
+              <div
+                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+                }}
+              >
+                <div className="text-sm text-white/90 font-medium mb-2">🌐 取得元サイト</div>
+                <div className="text-4xl font-bold text-white">
+                  {Object.values(siteCounts).filter((c) => c > 0).length} / 23
                 </div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600">1サイトあたり平均</div>
-                <div className="text-3xl font-bold text-gray-600">
+              <div
+                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)'
+                }}
+              >
+                <div className="text-sm text-white/90 font-medium mb-2">📈 平均収集数</div>
+                <div className="text-4xl font-bold text-white">
                   {Object.values(siteCounts).filter((c) => c > 0).length > 0
                     ? Math.round(events.length / Object.values(siteCounts).filter((c) => c > 0).length)
                     : 0}
