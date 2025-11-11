@@ -34,11 +34,16 @@ export default function FontSizeSwitcher() {
   return (
     <button
       onClick={toggleFontSize}
-      className="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600 transition-colors font-medium text-sm"
+      className="px-4 py-2 rounded-md shadow-lg transition-all hover:shadow-xl font-bold text-sm"
+      style={{
+        backgroundColor: '#FFD700',
+        color: '#2D3748',
+        border: '2px solid #FFA500'
+      }}
       aria-label={fontSize === 'normal' ? '文字を大きくする' : '文字を小さくする'}
       title={fontSize === 'normal' ? '文字を大きくする' : '文字を小さくする'}
     >
-      {fontSize === 'normal' ? '文字大きく' : '文字小さく'}
+      {fontSize === 'normal' ? '🔤 文字大きく' : '🔤 文字小さく'}
     </button>
   )
 }

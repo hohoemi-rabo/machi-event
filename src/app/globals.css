@@ -3,22 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* シニア向け：明るく優しい背景色（クリーム色） */
+  --background: #FFFBF5;
+  --foreground: #2D3748;
 }
 
 @layer base {
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    font-family: var(--font-noto-sans-jp), var(--font-geist-sans), system-ui, sans-serif;
   }
 }
 
@@ -61,4 +55,24 @@ a {
 .text-large a,
 .text-large button {
   font-size: 1.125rem !important;
+}
+
+/* NEWバッジ用レインボーアニメーション */
+@keyframes rainbow-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.new-badge-rainbow {
+  background: linear-gradient(90deg, #FF6B6B, #FFD93D, #6BCF7F, #4D96FF, #FF6B6B);
+  background-size: 300% 100%;
+  animation: rainbow-flow 3s ease infinite;
+  box-shadow: 0 0 15px rgba(107, 207, 127, 0.6), 0 0 30px rgba(77, 150, 255, 0.4);
 }

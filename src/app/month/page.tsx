@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import EventCard from '@/components/events/EventCard'
 import type { Event } from '@/types/event'
+import { getRegionColor } from '@/lib/utils/colors'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
@@ -130,19 +131,36 @@ export default function MonthPage() {
               {Object.keys(REGION_SITES).map((region) => {
                 const count = getRegionCount(region)
                 const isSelected = selectedRegion === region
+                const regionColor = getRegionColor(region)
 
                 return (
                   <button
                     key={region}
                     onClick={() => handleRegionSelect(region)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isSelected
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md"
+                    style={{
+                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
+                      color: isSelected ? regionColor.text : '#374151',
+                      opacity: isSelected ? 1 : 0.8,
+                      '--hover-bg': regionColor.bg,
+                      '--hover-text': regionColor.text,
+                    } as React.CSSProperties & { '--hover-bg': string; '--hover-text': string }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = regionColor.bg
+                        e.currentTarget.style.color = regionColor.text
+                        e.currentTarget.style.opacity = '0.9'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#F3F4F6'
+                        e.currentTarget.style.color = '#374151'
+                        e.currentTarget.style.opacity = '0.8'
+                      }
+                    }}
                   >
-                    <div className="truncate">{region}</div>
-                    <div className="text-xs mt-1">{count}件</div>
+                    <div className="truncate">{region} [{count}]</div>
                   </button>
                 )
               })}
@@ -160,19 +178,19 @@ export default function MonthPage() {
               {REGION_SITES[selectedRegion].map((site) => {
                 const count = siteCounts[site] || 0
                 const isSelected = selectedSite === site
+                const regionColor = getRegionColor(selectedRegion)
 
                 return (
                   <button
                     key={site}
                     onClick={() => setSelectedSite(site)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isSelected
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="px-3 py-2 rounded-md text-sm font-medium transition-all hover:shadow-md"
+                    style={{
+                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
+                      color: isSelected ? regionColor.text : '#374151',
+                    }}
                   >
-                    <div className="truncate">{site}</div>
-                    <div className="text-xs mt-1">{count}件</div>
+                    <div className="truncate">{site} [{count}]</div>
                   </button>
                 )
               })}

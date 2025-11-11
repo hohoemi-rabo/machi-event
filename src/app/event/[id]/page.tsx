@@ -26,12 +26,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!event) {
     return {
-      title: 'イベントが見つかりません | まちイベ'
+      title: 'イベントが見つかりません | 南信イベナビ'
     }
   }
 
   return {
-    title: `${event.title} | まちイベ`,
+    title: `${event.title} | 南信イベナビ`,
     description: event.detail || `${event.title}の詳細情報`
   }
 }

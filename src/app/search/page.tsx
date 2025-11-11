@@ -4,7 +4,7 @@ import EventCard from '@/components/events/EventCard'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'イベント検索 | まちイベ',
+  title: 'イベント検索 | 南信イベナビ',
   description: '南信州地域のイベント情報を地域・日付・キーワードで検索'
 }
 

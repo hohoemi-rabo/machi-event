@@ -23,7 +23,7 @@ export default function ShareButtons({ event }: ShareButtonsProps) {
     ? `${window.location.origin}/event/${event.id}`
     : ''
 
-  const shareText = `${event.title} | まちイベ`
+  const shareText = `${event.title} | 南信イベナビ`
 
   // Web Share API（モバイル優先）
   const handleWebShare = async () => {

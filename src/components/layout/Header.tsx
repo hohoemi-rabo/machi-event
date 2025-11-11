@@ -12,14 +12,19 @@ export default function Header() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <header
+      className="shadow-md sticky top-0 z-50"
+      style={{
+        background: 'linear-gradient(135deg, #B19CD9 0%, #9370DB 50%, #8B5CF6 100%)'
+      }}
+    >
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity"
+            className="text-2xl font-bold text-white hover:opacity-90 transition-opacity drop-shadow-md"
           >
-            まちイベ
+            📣 南信イベナビ
           </Link>
 
           {/* デスクトップメニュー */}
@@ -28,49 +33,49 @@ export default function Header() {
               <li>
                 <Link
                   href="/"
-                  className={`transition-colors font-medium ${
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
                     isActive('/')
-                      ? 'text-primary font-bold'
-                      : 'text-gray-700 hover:text-primary'
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                 >
-                  今週
+                  📅 今週
                 </Link>
               </li>
               <li>
                 <Link
                   href="/month"
-                  className={`transition-colors font-medium ${
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
                     isActive('/month')
-                      ? 'text-primary font-bold'
-                      : 'text-gray-700 hover:text-primary'
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                 >
-                  今月
+                  📆 今月
                 </Link>
               </li>
               <li>
                 <Link
                   href="/all"
-                  className={`transition-colors font-medium ${
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
                     isActive('/all')
-                      ? 'text-primary font-bold'
-                      : 'text-gray-700 hover:text-primary'
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                 >
-                  全イベント
+                  📋 全イベント
                 </Link>
               </li>
               <li>
                 <Link
                   href="/search"
-                  className={`transition-colors font-medium ${
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
                     isActive('/search')
-                      ? 'text-primary font-bold'
-                      : 'text-gray-700 hover:text-primary'
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                 >
-                  検索
+                  🔍 検索
                 </Link>
               </li>
             </ul>
@@ -80,7 +85,7 @@ export default function Header() {
           {/* モバイルメニューボタン */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-md hover:bg-white/20 transition-colors text-white"
             aria-label="メニュー"
             aria-expanded={isMenuOpen}
           >
@@ -118,58 +123,58 @@ export default function Header() {
 
         {/* モバイルメニュー */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 space-y-2 border-t pt-4">
+          <div className="md:hidden mt-4 space-y-2 border-t border-white/30 pt-4">
             <ul className="space-y-2">
               <li>
                 <Link
                   href="/"
-                  className={`block py-3 px-4 rounded-md transition-colors ${
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
                     isActive('/')
-                      ? 'bg-blue-50 text-primary font-bold'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  今週
+                  📅 今週
                 </Link>
               </li>
               <li>
                 <Link
                   href="/month"
-                  className={`block py-3 px-4 rounded-md transition-colors ${
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
                     isActive('/month')
-                      ? 'bg-blue-50 text-primary font-bold'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  今月
+                  📆 今月
                 </Link>
               </li>
               <li>
                 <Link
                   href="/all"
-                  className={`block py-3 px-4 rounded-md transition-colors ${
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
                     isActive('/all')
-                      ? 'bg-blue-50 text-primary font-bold'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  全イベント
+                  📋 全イベント
                 </Link>
               </li>
               <li>
                 <Link
                   href="/search"
-                  className={`block py-3 px-4 rounded-md transition-colors ${
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
                     isActive('/search')
-                      ? 'bg-blue-50 text-primary font-bold'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  検索
+                  🔍 検索
                 </Link>
               </li>
             </ul>

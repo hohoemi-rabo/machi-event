@@ -2,15 +2,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Event } from '@/types/event'
 import { formatDateShort } from '@/lib/utils/date'
+import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 
 interface EventCardProps {
   event: Event
 }
 
 export default function EventCard({ event }: EventCardProps) {
+  const regionColor = getRegionColor(event.region)
+  const lightBg = getRegionLightBg(event.region)
+
   return (
     <Link href={`/event/${event.id}`} className="block">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 h-full border border-gray-100">
+      <div
+        className="rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 h-full border border-gray-100"
+        style={{ backgroundColor: lightBg }}
+      >
         {event.image_url && (
           <div className="relative w-full h-48 mb-4">
             <Image
@@ -22,15 +29,26 @@ export default function EventCard({ event }: EventCardProps) {
           </div>
         )}
 
-        <div className="flex items-start gap-2 mb-2">
+        <div className="flex items-start justify-between mb-2">
+          <span
+            className="text-xs px-2 py-1 rounded font-medium"
+            style={{
+              backgroundColor: regionColor.bg,
+              color: regionColor.text
+            }}
+          >
+            {event.region}
+          </span>
           {event.is_new && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-medium">
+            <span
+              className="text-white text-xs px-2 py-1 rounded font-bold new-badge-rainbow"
+              style={{
+                textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)'
+              }}
+            >
               NEW
             </span>
           )}
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-medium">
-            {event.region}
-          </span>
         </div>
 
         <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-gray-900">

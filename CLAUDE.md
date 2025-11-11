@@ -39,11 +39,11 @@ npm run lint
 ```
 src/
   ├── app/                       # Next.js App Router
-  │   ├── layout.tsx             # ルートレイアウト（ScrollToTopButton含む）
-  │   ├── page.tsx               # トップページ（今週のイベント、2段階フィルター）
-  │   ├── globals.css            # グローバルスタイル（レスポンシブ対応）
-  │   ├── month/page.tsx         # 今月のイベント（2段階フィルター）
-  │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域カラム含む）
+  │   ├── layout.tsx             # ルートレイアウト（ScrollToTopButton含む、Noto Sans JP）
+  │   ├── page.tsx               # トップページ（今週のイベント、2段階フィルター、地域色ホバー）
+  │   ├── globals.css            # グローバルスタイル（NEWバッジアニメーション、文字サイズ可変）
+  │   ├── month/page.tsx         # 今月のイベント（2段階フィルター、地域色ホバー）
+  │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域色適用、ヘッダー色連動）
   │   ├── search/page.tsx        # イベント検索ページ（旧 events/）
   │   ├── event/[id]/
   │   │   ├── page.tsx           # イベント詳細ページ
@@ -53,15 +53,15 @@ src/
   │
   ├── components/
   │   ├── layout/
-  │   │   ├── Header.tsx         # ヘッダー（モバイルメニュー対応、FontSizeSwitcher含む）
-  │   │   └── Footer.tsx         # フッター
+  │   │   ├── Header.tsx         # ヘッダー（紫グラデーション、ナビアイコン、白グロー効果）
+  │   │   └── Footer.tsx         # フッター（紫グラデーション）
   │   ├── events/
-  │   │   ├── EventCard.tsx      # イベントカード
+  │   │   ├── EventCard.tsx      # イベントカード（地域色背景、NEWバッジ虹色・右端配置）
   │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
   │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
   │   │   └── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
   │   └── ui/
-  │       ├── FontSizeSwitcher.tsx # 文字サイズ切り替え（ヘッダー内）
+  │       ├── FontSizeSwitcher.tsx # 文字サイズ切り替え（金色ボタン、ヘッダー内）
   │       └── ScrollToTopButton.tsx # ページトップスクロールボタン（右下固定）
   │
   ├── lib/
@@ -199,13 +199,28 @@ created_at: TIMESTAMP
 ### フェーズ2: Web UI ✅ 完全完了
 - イベント一覧（今週/今月/全イベント）
   - **2段階フィルター**: 地域選択 → サイト選択（トップ・今月ページ）
-  - カード型UI（トップ・今月ページ）
-  - テーブル型UI（全イベントページ、地域カラム含む）
+  - カード型UI（トップ・今月ページ、地域色背景）
+  - テーブル型UI（全イベントページ、行・ヘッダーに地域色適用）
 - フィルタリング機能
   - 地域別（14地域、「南信州」含む）
+  - 地域ボタンホバー効果（フワッと地域色に変化）
   - 日付範囲フィルター
   - キーワード検索
   - URL連携（/search ページ）
+- **地域色ベースのデザイン統一**
+  - 14地域それぞれに固有の色設定（Crimson, Gold, Lavender等）
+  - イベントカード背景に地域色（12%透明度）
+  - テーブル行背景に地域色（12%透明度）
+  - テーブルヘッダーに選択地域色を適用
+  - サイトフィルターボタンに地域色を適用
+- **UIコンポーネント強化**
+  - NEWバッジ: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション、右端配置
+  - ヘッダー/フッター: 紫グラデーション（Lavender → Purple → Violet）
+  - ナビメニュー: 白グロー効果（ホバー時）
+  - フォント: Noto Sans JP導入（日本語最適化）
+  - FontSizeSwitcher: 金色ボタン（🔤アイコン）
+  - ナビアイコン: 📅今週、📆今月、📋全イベント、🔍検索
+  - ロゴ: 📣メガホン
 - シェア機能（LINE、X、Instagram、URLコピー）
 - レスポンシブデザイン（モバイル対応）
 - 文字サイズ切り替え（ヘッダー内、高齢者対応）
@@ -228,8 +243,29 @@ created_at: TIMESTAMP
 
 ### Tailwind CSS
 - **カラー変数**: `--background`, `--foreground`（ライト/ダークモード対応）
-- **フォント**: Geist Sans（通常）、Geist Mono（コード）
+- **フォント**: Noto Sans JP（日本語）、Geist Sans（通常）、Geist Mono（コード）
 - **ブレークポイント**: モバイルファーストでsm以上でレスポンシブ対応
+
+### デザインシステム
+- **ヘッダー/フッター**: 紫グラデーション（Lavender → Purple → Violet）
+- **地域色**: 14地域それぞれに固有の色（Crimson, Gold, Lavender等）
+- **NEWバッジ**: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション
+- **ホバー効果**: 地域ボタン（地域色へフェード）、ナビメニュー（白グロー）
+- **アニメーション**: `@keyframes rainbow-flow`（3秒周期で虹色が流れる）
+
+### カスタムアニメーション（globals.css）
+```css
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.new-badge-rainbow {
+  background: linear-gradient(90deg, #FF6B6B, #FFD93D, #6BCF7F, #4D96FF, #FF6B6B);
+  background-size: 300% 100%;
+  animation: rainbow-flow 3s ease infinite;
+}
+```
 
 ### ダークモード
 - CSS Media Query: `@media (prefers-color-scheme: dark)`
@@ -653,19 +689,26 @@ curl http://localhost:54321/functions/v1/scrape-events
 - ✅ フロントエンド基盤構築（`07`）
   - Supabase クライアント（SSR対応）
   - TypeScript型定義
-  - レイアウトコンポーネント（Header/Footer）
+  - レイアウトコンポーネント（Header/Footer、紫グラデーション）
   - 日付ユーティリティ
   - Tailwind カスタムテーマ
+  - Noto Sans JP フォント導入
 - ✅ イベント一覧ページ（`08`）
   - **2段階フィルターUI実装**（地域→サイト選択）
   - 今週・今月のイベント表示（Client Component化）
-  - 全イベントページ追加（/all、テーブル形式、地域カラム含む）
-  - EventCardコンポーネント（カード型UI）
+  - 全イベントページ追加（/all、テーブル形式）
+    - テーブル行に地域色適用（12%透明度）
+    - テーブルヘッダーに選択地域色適用
+  - EventCardコンポーネント（カード型UI、地域色背景）
+    - NEWバッジ: 虹色グラデーション、右端配置
   - レスポンシブグリッドレイアウト
   - スクレイピングサマリー表示（/allページ）
 - ✅ フィルタリング機能（`09`）
   - 2段階フィルター（トップ・今月ページ）
   - 地域フィルター（ボタン形式、14地域対応、「南信州」含む）
+    - 地域ボタンホバー効果（フワッと地域色に変化）
+    - サイトフィルターボタンに地域色適用
+    - 件数表示: 角括弧形式 [12]
   - 検索ページ（/search、旧/events）
     - 地域ドロップダウン（bg-white, text-gray-900で視認性向上）
     - キーワード検索
@@ -691,10 +734,13 @@ curl http://localhost:54321/functions/v1/scrape-events
   - モバイルナビゲーション（ハンバーガーメニュー）
   - 画像最適化設定（AVIF/WebP対応）
   - タッチ操作対応（最小44x44pxタッチターゲット）
-  - 文字サイズ切り替え機能（ヘッダー内配置、高齢者対応）
+  - 文字サイズ切り替え機能（金色ボタン、🔤アイコン、ヘッダー内配置）
   - **ScrollToTopButton実装**（右下固定、300px以上スクロールで表示）
   - レスポンシブグリッド（モバイル1列、タブレット2列、PC3列）
   - ヘッダー固定（sticky top-0 z-50）
+  - ナビメニュー: 白グロー効果（ホバー時）
+  - ナビアイコン: 📅今週、📆今月、📋全イベント、🔍検索
+  - ロゴアイコン: 📣メガホン
 
 ### Phase 3-4: LINE連携・運用 ⏳ 未着手
 - ⏳ LINE連携（`13-14`）
@@ -1049,6 +1095,14 @@ grep -r "\- \[×\]" docs/ | wc -l
 - **テストページ**: http://localhost:3000/test で全サイトのスクレイピング状況確認可能
 - **UI実装**:
   - 2段階フィルター（地域→サイト）
+  - 地域色ベースのデザイン統一（14地域固有色）
+  - NEWバッジ: 虹色グラデーション、右端配置、レインボーアニメーション
+  - ヘッダー/フッター: 紫グラデーション（Lavender → Purple → Violet）
+  - 地域ボタン: ホバー時に地域色へフェード
+  - ナビメニュー: 白グロー効果（ホバー時）
+  - テーブル行・ヘッダー: 地域色適用
   - スクロールトップボタン（右下固定）
-  - 文字サイズ切り替え（ヘッダー内）
+  - 文字サイズ切り替え（金色ボタン、ヘッダー内）
+  - Noto Sans JP フォント（日本語最適化）
+  - ナビアイコン: 📅📆📋🔍、ロゴ: 📣
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人

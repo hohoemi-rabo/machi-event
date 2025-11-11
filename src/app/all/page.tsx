@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/types/event'
+import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
@@ -140,19 +141,36 @@ export default function AllEventsPage() {
               {Object.keys(REGION_SITES).map((region) => {
                 const count = getRegionCount(region)
                 const isSelected = selectedRegion === region
+                const regionColor = getRegionColor(region)
 
                 return (
                   <button
                     key={region}
                     onClick={() => handleRegionSelect(region)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isSelected
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md"
+                    style={{
+                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
+                      color: isSelected ? regionColor.text : '#374151',
+                      opacity: isSelected ? 1 : 0.8,
+                      '--hover-bg': regionColor.bg,
+                      '--hover-text': regionColor.text,
+                    } as React.CSSProperties & { '--hover-bg': string; '--hover-text': string }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = regionColor.bg
+                        e.currentTarget.style.color = regionColor.text
+                        e.currentTarget.style.opacity = '0.9'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#F3F4F6'
+                        e.currentTarget.style.color = '#374151'
+                        e.currentTarget.style.opacity = '0.8'
+                      }
+                    }}
                   >
-                    <div className="truncate">{region}</div>
-                    <div className="text-xs mt-1">{count}件</div>
+                    <div className="truncate">{region} [{count}]</div>
                   </button>
                 )
               })}
@@ -170,19 +188,19 @@ export default function AllEventsPage() {
               {REGION_SITES[selectedRegion].map((site) => {
                 const count = siteCounts[site] || 0
                 const isSelected = selectedSite === site
+                const regionColor = getRegionColor(selectedRegion)
 
                 return (
                   <button
                     key={site}
                     onClick={() => setSelectedSite(site)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isSelected
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="px-3 py-2 rounded-md text-sm font-medium transition-all hover:shadow-md"
+                    style={{
+                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
+                      color: isSelected ? regionColor.text : '#374151',
+                    }}
                   >
-                    <div className="truncate">{site}</div>
-                    <div className="text-xs mt-1">{count}件</div>
+                    <div className="truncate">{site} [{count}]</div>
                   </button>
                 )
               })}
@@ -204,31 +222,42 @@ export default function AllEventsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <thead className="border-b">
+                    <tr
+                      style={{
+                        backgroundColor: getRegionColor(selectedRegion).bg,
+                        color: getRegionColor(selectedRegion).text,
+                      }}
+                    >
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         タイトル
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         開催日
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         地域
                       </th>
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         時間
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         場所
                       </th> */}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         ソースURL
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200">
                     {filteredEvents.map((event) => (
-                      <tr key={event.id} className="hover:bg-gray-50">
+                      <tr
+                        key={event.id}
+                        className="hover:bg-opacity-80 transition-colors"
+                        style={{
+                          backgroundColor: getRegionLightBg(event.region)
+                        }}
+                      >
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {event.title}
                         </td>

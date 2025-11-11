@@ -4,7 +4,7 @@ import { getWeekRange } from '@/lib/utils/date'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '今週のイベント | まちイベ',
+  title: '今週のイベント | 南信イベナビ',
   description: '南信州地域の今週開催されるイベント情報'
 }
 

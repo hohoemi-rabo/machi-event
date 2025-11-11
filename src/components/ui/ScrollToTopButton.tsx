@@ -37,7 +37,8 @@ export default function ScrollToTopButton() {
       {isVisible && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition-all duration-300 z-50"
+          className="fixed bottom-4 right-4 text-white p-4 rounded-full shadow-lg transition-all duration-300 z-50 hover:shadow-xl"
+          style={{ backgroundColor: '#FF8C42' }}
           aria-label="ページトップへ"
           title="ページトップへ"
         >
