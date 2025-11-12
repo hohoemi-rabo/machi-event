@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import liff from '@line/liff'
 
 interface NotifyButtonProps {
@@ -14,40 +14,8 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
   const [message, setMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    // LIFF初期化
-    const initializeLiff = async () => {
-      try {
-        const liffId = process.env.NEXT_PUBLIC_LIFF_ID
-        if (!liffId) {
-          console.error('LIFF ID is not set')
-          setErrorMessage('LIFF IDが設定されていません')
-          return
-        }
-
-        await liff.init({ liffId })
-        setIsReady(true)
-
-        // ログイン後に自動的に通知登録を実行
-        if (liff.isLoggedIn()) {
-          const pendingNotification = localStorage.getItem('pending_notification')
-          if (pendingNotification === eventId) {
-            localStorage.removeItem('pending_notification')
-            // 自動的に通知登録を実行
-            await registerNotification()
-          }
-        }
-      } catch (error) {
-        console.error('LIFF initialization failed:', error)
-        setErrorMessage('LIFF初期化エラー')
-      }
-    }
-
-    initializeLiff()
-  }, [])
-
-  // 通知登録処理を分離
-  const registerNotification = async () => {
+  // 通知登録処理（useCallbackで定義）
+  const registerNotification = useCallback(async () => {
     setIsNotifying(true)
     setMessage(null)
     setErrorMessage(null)
@@ -83,7 +51,39 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
     } finally {
       setIsNotifying(false)
     }
-  }
+  }, [eventId])
+
+  useEffect(() => {
+    // LIFF初期化
+    const initializeLiff = async () => {
+      try {
+        const liffId = process.env.NEXT_PUBLIC_LIFF_ID
+        if (!liffId) {
+          console.error('LIFF ID is not set')
+          setErrorMessage('LIFF IDが設定されていません')
+          return
+        }
+
+        await liff.init({ liffId })
+        setIsReady(true)
+
+        // ログイン後に自動的に通知登録を実行
+        if (liff.isLoggedIn()) {
+          const pendingNotification = localStorage.getItem('pending_notification')
+          if (pendingNotification === eventId) {
+            localStorage.removeItem('pending_notification')
+            // 自動的に通知登録を実行
+            await registerNotification()
+          }
+        }
+      } catch (error) {
+        console.error('LIFF initialization failed:', error)
+        setErrorMessage('LIFF初期化エラー')
+      }
+    }
+
+    initializeLiff()
+  }, [eventId, registerNotification])
 
   const handleNotify = async () => {
     if (!isReady) {
