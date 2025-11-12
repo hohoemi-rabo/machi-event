@@ -14,11 +14,10 @@ function LiffRedirectHandler() {
 
   useEffect(() => {
     const handleLiffRedirect = async () => {
-      const liffState = searchParams.get('liff.state')
       const code = searchParams.get('code')
 
       // LINEログイン後のリダイレクトの場合
-      if (code && liffState) {
+      if (code) {
         console.log('[LIFF] Authentication code detected, initializing LIFF...')
 
         try {
@@ -38,13 +37,13 @@ function LiffRedirectHandler() {
           console.error('[LIFF] Initialization failed:', error)
         }
 
+        // localStorageから戻り先URLを取得
+        const returnUrl = localStorage.getItem('return_url') || '/'
+        console.log('[LIFF Redirect] Redirecting to:', returnUrl)
+        localStorage.removeItem('return_url')
+
         // LIFF初期化の成否に関わらず、元のページにリダイレクト
-        console.log('[LIFF Redirect] Redirecting to:', liffState)
-        router.replace(liffState)
-      } else if (liffState) {
-        // 通常のリダイレクト（認証コードなし）
-        console.log('[LIFF Redirect] Redirecting to:', liffState)
-        router.replace(liffState)
+        router.replace(returnUrl)
       }
     }
 

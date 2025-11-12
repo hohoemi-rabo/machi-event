@@ -111,12 +111,13 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
 
     // LINEログイン確認
     if (!liff.isLoggedIn()) {
-      // ログイン後に通知登録を実行するためにイベントIDを保存
+      // ログイン後に通知登録を実行するためにイベントIDと現在のURLを保存
       setDebugInfo(prev => [...prev, `localStorageに保存: ${eventId}`])
       localStorage.setItem('pending_notification', eventId)
+      localStorage.setItem('return_url', window.location.pathname)
+      setDebugInfo(prev => [...prev, `return_url保存: ${window.location.pathname}`])
       setDebugInfo(prev => [...prev, 'LINEログイン画面へ遷移...'])
       // redirectUriを指定せず、LIFFエンドポイントURL（トップページ）経由で認証
-      // トップページで認証完了後、liff.stateで元のページにリダイレクトされる
       liff.login()
       return
     }
