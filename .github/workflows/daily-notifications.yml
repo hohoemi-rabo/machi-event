@@ -1,0 +1,32 @@
+name: Daily LINE Notifications
+
+on:
+  schedule:
+    # 毎日 23:00 UTC（日本時間 8:00）に実行
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  send-notifications:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Daily Event Notifications
+        run: |
+          echo "🔔 Sending daily event notifications..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            https://dpeeozdddgmjsnrgxdpz.supabase.co/functions/v1/send-daily-notifications \
+            -d '{}'
+          echo "✅ Daily notifications sent"
+
+      - name: Send Event Reminders
+        run: |
+          echo "⏰ Sending event reminders..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            https://dpeeozdddgmjsnrgxdpz.supabase.co/functions/v1/send-event-reminders \
+            -d '{}'
+          echo "✅ Event reminders sent"
