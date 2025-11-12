@@ -1,11 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import EventCard from '@/components/events/EventCard'
 import type { Event } from '@/types/event'
 import { getRegionColor } from '@/lib/utils/colors'
+
+// LIFFリダイレクト処理を別コンポーネントに分離
+function LiffRedirectHandler() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const liffState = searchParams.get('liff.state')
+    if (liffState) {
+      console.log('[LIFF Redirect] Redirecting to:', liffState)
+      router.replace(liffState)
+    }
+  }, [searchParams, router])
+
+  return null
+}
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
@@ -60,23 +76,11 @@ function getWeekRange() {
 }
 
 export default function HomePage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const [allEvents, setAllEvents] = useState<Event[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
   const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
-
-  // LIFFリダイレクト処理
-  useEffect(() => {
-    const liffState = searchParams.get('liff.state')
-    if (liffState) {
-      // liff.stateがある場合、そのパスにリダイレクト
-      console.log('[LIFF Redirect] Redirecting to:', liffState)
-      router.replace(liffState)
-    }
-  }, [searchParams, router])
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -145,9 +149,15 @@ export default function HomePage() {
   const { start: weekStart, end: weekEnd } = getWeekRange()
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* ヘッダー */}
-      <div className="mb-8">
+    <>
+      {/* LIFFリダイレクト処理 */}
+      <Suspense fallback={null}>
+        <LiffRedirectHandler />
+      </Suspense>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* ヘッダー */}
+        <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">今週のイベント</h1>
         <p className="text-gray-600">
           {weekStart.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })} 〜{' '}
@@ -255,6 +265,7 @@ export default function HomePage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   )
 }
