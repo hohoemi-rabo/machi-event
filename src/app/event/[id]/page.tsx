@@ -66,6 +66,16 @@ export default async function EventDetailPage({ params }: PageProps) {
   const regionColor = getRegionColor(event.region)
   const lightBg = getRegionLightBg(event.region)
 
+  // 未来のイベント かつ 登録から7日以内かを判定
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const eventDate = new Date(event.event_date)
+  eventDate.setHours(0, 0, 0, 0)
+  const createdAt = new Date(event.created_at)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+  const isNew = eventDate >= today && createdAt > sevenDaysAgo
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Link
@@ -107,7 +117,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           >
             {event.region}
           </span>
-          {event.is_new && (
+          {isNew && (
             <span
               className="text-white text-sm px-3 py-2 rounded-lg font-bold new-badge-rainbow shadow-md"
               style={{

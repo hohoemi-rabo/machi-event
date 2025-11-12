@@ -12,6 +12,16 @@ export default function EventCard({ event }: EventCardProps) {
   const regionColor = getRegionColor(event.region)
   const lightBg = getRegionLightBg(event.region)
 
+  // 未来のイベント かつ 登録から7日以内かを判定
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const eventDate = new Date(event.event_date)
+  eventDate.setHours(0, 0, 0, 0)
+  const createdAt = new Date(event.created_at)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+  const isNew = eventDate >= today && createdAt > sevenDaysAgo
+
   return (
     <Link href={`/event/${event.id}`} className="block">
       <div
@@ -39,7 +49,7 @@ export default function EventCard({ event }: EventCardProps) {
           >
             {event.region}
           </span>
-          {event.is_new && (
+          {isNew && (
             <span
               className="text-white text-xs px-2 py-1 rounded font-bold new-badge-rainbow"
               style={{
