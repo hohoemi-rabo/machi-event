@@ -89,7 +89,7 @@ supabase/functions/              # Supabase Edge Functions
   │   ├── alert.ts               # Slack通知
   │   ├── sites-config.ts        # 23サイト設定（RSS 8 + HTML 15）
   │   ├── html-parser.ts         # HTMLパーサー
-  │   ├── rss-parser.ts          # RSSパーサー（RSS 1.0/2.0対応）
+  │   ├── rss-parser.ts          # 正規表現ベースRSSパーサー（cheerio依存なし、RSS 1.0/2.0/Atom対応）
   │   └── date-utils.ts          # 日付パース
   │
   ├── line-webhook/              # LINE Webhook（5ファイル、Version 8）
@@ -114,7 +114,7 @@ docs/                            # チケット管理
   ├── 03-scraping-core.md        # ✅
   ├── 04-scraping-sites.md       # ✅
   ├── 05-error-handling.md       # ✅
-  ├── 06-cron-setup.md           # ⏳ 後回し
+  ├── 06-cron-setup.md           # ✅ 完了（GitHub Actions）
   ├── 07-frontend-setup.md       # Phase 2 ✅
   ├── 08-event-list-pages.md     # ✅
   ├── 09-filtering-feature.md    # ✅
@@ -122,6 +122,9 @@ docs/                            # チケット管理
   ├── 11-share-feature.md        # ✅
   ├── 12-responsive-design.md    # ✅
   └── 13-17-*.md                 # Phase 3-4（未着手）
+
+.github/workflows/               # GitHub Actions
+  └── daily-notifications.yml    # 毎朝8時の自動通知（Cron）
 
 next.config.ts                   # Next.js設定（画像最適化含む）
 public/                          # 静的ファイル
@@ -224,7 +227,7 @@ created_at: TIMESTAMP DEFAULT NOW()
 
 ### フェーズ1: 基盤構築 ✅ 完全完了
 - **23サイトからの自動スクレイピング（RSS 8サイト、HTML 15サイト - 全設定完了）**
-- 1日1回深夜帯実行（Cron設定は次フェーズ）
+- 1日1回深夜帯実行（Cron設定完了、GitHub Actions）
 - 重複判定（タイトル＋開催日＋取得元）
   - **Version 37で修正**: `.maybeSingle()` → `.limit(1)` で複数行対応
 - エラーハンドリングとログ記録
@@ -234,7 +237,10 @@ created_at: TIMESTAMP DEFAULT NOW()
 - 日本語日付パース（YYYY.MM.DD形式含む7パターン対応）
 - データベース: **590件**のイベント（2025年11月時点）
   - 重複データ9件削除済み（2025年11月10日）
-- Edge Functions: **Version 37** デプロイ済み
+- Edge Functions: **Version 45** デプロイ済み（2025年11月12日）
+  - **Version 45の主要変更**: cheerio依存削除、正規表現ベースのRSSパーサー実装、DOMParserエラー解決
+  - 飯田市役所RSS URL更新（life3-16.xml → list1.xml）
+  - ISO 8601日付パースのタイムゾーン問題修正（1日ずれ解消）
 - 地域設定: 「その他」→「南信州」に変更（南信州ナビ用）
 
 ### フェーズ2: Web UI ✅ 完全完了
@@ -287,9 +293,12 @@ created_at: TIMESTAMP DEFAULT NOW()
 - ✅ 通知登録API実装（POST/GET/DELETE）
 - ✅ NotifyButtonコンポーネント実装（イベント詳細ページ）
 - ✅ 地域選択機能動作確認（line_usersテーブルにデータ保存確認済み）
+- ✅ **Cron設定完了**（GitHub Actions、毎朝8時JST = 23:00 UTC）
+  - `.github/workflows/daily-notifications.yml` 作成
+  - send-daily-notifications（新着イベント通知、最大3件、30日以内）
+  - send-event-reminders（開催前日リマインダー）
 
 **未完了：**
-- ⏳ Cron設定（毎朝8時自動実行）
 - ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応）
 - ⏳ LIFF実装（Web→LINE ID取得→通知登録の完全自動化）
 - ⏳ リッチメニュー設定（オプション）
@@ -621,6 +630,51 @@ HAVING COUNT(*) > 1;
 
 **実績**: 2025年11月10日に9件の重複データを削除（飯田市役所）
 
+#### 6. DOMParserエラー（Version 45で解決済み） ✅
+**問題**: 突然すべてのRSSサイトで「ReferenceError: DOMParser is not defined」エラーが発生
+- 原因: cheerioライブラリの`xmlMode`が内部でDOMParser（ブラウザAPI）を使用しようとした
+- Denoランタイムの更新により、以前動いていたコードが突然動かなくなった
+
+**解決策**: cheerio依存を完全に削除し、正規表現ベースのXMLパーサーを実装
+```typescript
+// rss-parser.ts（Version 45）
+// cheerioを使わず、正規表現でXMLをパース
+const itemMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/gi)
+for (const match of itemMatches) {
+  const itemXml = match[1]
+  const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+  // ...
+}
+```
+
+**教訓**: 外部ライブラリへの依存を最小限にすることで、環境の変化に強いコードになる
+
+#### 7. フロントエンドのタイムゾーン問題 ✅
+**問題**: トップページ・今月ページで表示範囲が1日ずれる
+- 例: 今週は11/9〜11/15のはずが、11/8〜11/15として取得される
+- 原因: `toISOString()`がUTCに変換するため、JSTとの9時間差で日付がずれる
+
+**解決策**: ローカルタイムゾーンで日付を計算し、YYYY-MM-DD形式の文字列を生成
+```typescript
+// page.tsx / month/page.tsx（修正後）
+function getWeekRange() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const date = today.getDate()
+  const dayOfWeek = today.getDay()
+
+  const startDate = new Date(year, month, date - dayOfWeek)
+  const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+
+  return { start: startDate, end: endDate, startStr, endStr }
+}
+```
+
+**追加修正**: useEffectの無限ループも解消
+- 依存配列から`start`/`end`を削除し、空配列`[]`に変更
+- レンダリングのたびに新しいDateオブジェクトが作成されて無限ループになっていた
+
 ### HTMLサイト設定の推奨フロー
 
 1. **HTMLページ構造の確認**: ユーザーが実際のHTML構造を提供
@@ -742,8 +796,11 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 2段階フィルター機能
   - スクレイピングサマリー表示
 
-### Phase 1.5: 定期実行 ⏳ 後回し
-- ⏳ Cron設定（`06-cron-setup.md`）
+### Phase 1.5: 定期実行 ✅ 完了
+- ✅ Cron設定（`06-cron-setup.md`）
+  - GitHub Actions で毎朝8時JST（23:00 UTC）に自動実行
+  - send-daily-notifications（新着イベント通知）
+  - send-event-reminders（開催前日リマインダー）
 
 ### Phase 2: Web UI ✅ 完全完了
 - ✅ フロントエンド基盤構築（`07`）
@@ -1140,7 +1197,8 @@ grep -r "\- \[×\]" docs/ | wc -l
   - RSS形式: 8サイト（全設定完了）
   - HTML形式: 15サイト（全設定完了）
   - 現在**590件**のイベントデータ（2025年11月時点）
-  - Edge Functions: **Version 37** デプロイ済み
+  - Edge Functions: **Version 45** デプロイ済み（2025年11月12日）
+  - **Version 45の変更点**: cheerio依存削除、正規表現ベースのRSSパーサー、飯田市役所URL更新
 - **地域設定**: 14地域対応（「南信州」含む）
   - 南信州ナビ: region='南信州'（広域対応）
   - その他サイト: 各市町村名
@@ -1153,6 +1211,12 @@ grep -r "\- \[×\]" docs/ | wc -l
   - 重複データは定期的に確認・削除
 - **日付パース重要事項**: 年付き形式（YYYY.MM.DD等）を年なし形式より優先してマッチ
 - **テストページ**: http://localhost:3000/test で全サイトのスクレイピング状況確認可能
+- **タイムゾーン問題**: `toISOString()`は使わず、ローカルタイムゾーンで日付計算（フロントエンド・バックエンド共通）
+- **RSS URL変更**: 自治体サイトのRSS URLが変更されることがあるため、定期的に確認が必要
+  - 飯田市役所: 2025年11月にURL変更（life3-16.xml → list1.xml）
+- **環境変化への対応**: Denoランタイムの更新により既存コードが動かなくなることがある
+  - 外部ライブラリへの依存を最小限に抑えることが重要
+  - DOMParserエラー（Version 45で解決）がその一例
 - **UI実装**:
   - 2段階フィルター（地域→サイト）
   - 地域色ベースのデザイン統一（14地域固有色）
