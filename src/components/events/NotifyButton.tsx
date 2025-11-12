@@ -109,7 +109,10 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
       setDebugInfo(prev => [...prev, `localStorageに保存: ${eventId}`])
       localStorage.setItem('pending_notification', eventId)
       setDebugInfo(prev => [...prev, 'LINEログイン画面へ遷移...'])
-      liff.login()
+      // 現在のURLに戻るように指定
+      liff.login({
+        redirectUri: window.location.href
+      })
       return
     }
 
