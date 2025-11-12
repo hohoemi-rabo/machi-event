@@ -200,6 +200,11 @@ notify_date: DATE NOT NULL
 is_sent: BOOLEAN DEFAULT false
 created_at: TIMESTAMP DEFAULT NOW()
 UNIQUE(line_user_id, event_id)
+
+-- RLSポリシー（2025年11月13日設定）
+SELECT: Allow public read access
+INSERT: Allow public insert access
+DELETE: Allow public delete access
 ```
 
 ### notification_logsテーブル ✅ 実装済み
@@ -276,7 +281,7 @@ created_at: TIMESTAMP DEFAULT NOW()
 - テストページ（スクレイピング確認用）
 - ページリネーム: /events → /search
 
-### フェーズ3: LINE連携 ✅ 基本実装完了
+### フェーズ3: LINE連携 ✅ 完全実装完了（2025年11月13日）
 - ✅ LINE公式アカウント統合（Webhook設定完了）
 - ✅ Webhook Edge Function実装（Version 8）
   - 友だち追加/ブロック処理
@@ -291,16 +296,31 @@ created_at: TIMESTAMP DEFAULT NOW()
   - 開催前日の朝8時にリマインダー送信
   - event_notificationsテーブル連携
 - ✅ 通知登録API実装（POST/GET/DELETE）
+  - `/api/notifications` エンドポイント
+  - 詳細なエラーメッセージ返却（デバッグ用）
 - ✅ NotifyButtonコンポーネント実装（イベント詳細ページ）
+  - LIFF SDK統合（@line/liff）
+  - localStorage ベースの認証フロー
+  - デバッグ情報表示（本番環境で一時的に有効）
+- ✅ **LIFF実装完了**（Web→LINE ID取得→通知登録の完全自動化）
+  - LINE Login チャネル作成・本番公開
+  - LIFF ID: 2008483961-A2bmZD0X
+  - エンドポイントURL: https://machi-event.vercel.app/
+  - localStorage で return_url と pending_notification を管理
+  - トップページで認証コード処理後、元のページにリダイレクト
+  - Android/iPhone 動作確認済み
+- ✅ **RLSポリシー設定完了**
+  - SELECT: 公開読み取り許可
+  - INSERT: 通知登録許可
+  - DELETE: 通知削除許可
 - ✅ 地域選択機能動作確認（line_usersテーブルにデータ保存確認済み）
 - ✅ **Cron設定完了**（GitHub Actions、毎朝8時JST = 23:00 UTC）
   - `.github/workflows/daily-notifications.yml` 作成
   - send-daily-notifications（新着イベント通知、最大3件、30日以内）
   - send-event-reminders（開催前日リマインダー）
 
-**未完了：**
-- ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応）
-- ⏳ LIFF実装（Web→LINE ID取得→通知登録の完全自動化）
+**未完了（オプション機能）：**
+- ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応、優先度低）
 - ⏳ リッチメニュー設定（オプション）
 
 ### フェーズ4: 運用管理
@@ -859,9 +879,41 @@ curl http://localhost:54321/functions/v1/scrape-events
   - ナビアイコン: 📅今週、📆今月、📋全イベント、🔍検索
   - ロゴアイコン: 📣メガホン
 
-### Phase 3-4: LINE連携・運用 ⏳ 未着手
-- ⏳ LINE連携（`13-14`）
-- ⏳ テスト・デプロイ・運用（`15-17`）
+### Phase 3: LINE連携 ✅ 完全完了（2025年11月13日）
+- ✅ LINE公式アカウント作成・Webhook設定
+- ✅ LINE Developers 設定・トークン取得
+- ✅ データベース拡張
+  - line_users テーブル（地域設定保存）
+  - event_notifications テーブル（個別通知登録）
+  - notification_logs テーブル（通知履歴）
+  - RLSポリシー設定（SELECT/INSERT/DELETE）
+- ✅ Webhook Edge Function実装（Version 8）
+  - 友だち追加/ブロック処理
+  - 地域選択（Flexメッセージ、Postback処理）
+  - HMAC-SHA256署名検証
+- ✅ 定期通知Edge Function実装
+  - send-daily-notifications（毎朝8時、最大3件）
+  - send-event-reminders（開催前日リマインダー）
+- ✅ LIFF実装（個別イベント通知）
+  - LINE Login チャネル作成・本番公開
+  - LIFF SDK統合（@line/liff）
+  - NotifyButton コンポーネント実装
+  - localStorage ベースの認証フロー
+  - 通知登録API（/api/notifications）
+  - Android/iPhone 動作確認済み
+- ✅ GitHub Actions Cron設定（毎朝8時JST）
+- ✅ NEWバッジロジック修正（未来イベント＋登録7日以内）
+
+**残タスク（オプション）：**
+- ⏳ 地域選択の拡張（現在3地域 → 14地域対応）
+- ⏳ リッチメニュー設定
+- ⏳ デバッグ情報を本番環境で非表示にする
+
+### Phase 4: 運用・保守 ⏳ 一部実施中
+- ✅ Vercel本番デプロイ（https://machi-event.vercel.app/）
+- ✅ スクレイピングログ確認機能（/logs）
+- ⏳ エラー監視（Sentry等の導入検討）
+- ⏳ 手動イベント追加機能（管理画面）
 
 ## Next.js App Router ベストプラクティス
 
