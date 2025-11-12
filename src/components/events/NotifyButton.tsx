@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import liff from '@line/liff'
 
 interface NotifyButtonProps {
   eventId: string
@@ -8,34 +9,77 @@ interface NotifyButtonProps {
 }
 
 export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps) {
+  const [isReady, setIsReady] = useState(false)
   const [isNotifying, setIsNotifying] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    // LIFF初期化
+    const initializeLiff = async () => {
+      try {
+        const liffId = process.env.NEXT_PUBLIC_LIFF_ID
+        if (!liffId) {
+          console.error('LIFF ID is not set')
+          setErrorMessage('LIFF IDが設定されていません')
+          return
+        }
+
+        await liff.init({ liffId })
+        setIsReady(true)
+      } catch (error) {
+        console.error('LIFF initialization failed:', error)
+        setErrorMessage('LIFF初期化エラー')
+      }
+    }
+
+    initializeLiff()
+  }, [])
 
   const handleNotify = async () => {
+    if (!isReady) {
+      setErrorMessage('LIFFの準備ができていません')
+      return
+    }
+
     setIsNotifying(true)
     setMessage(null)
+    setErrorMessage(null)
 
     try {
-      // LINE公式アカウントへのリンク
-      // TODO: 実際のLINE公式アカウントIDに置き換える
-      const lineAddFriendUrl = 'https://line.me/R/ti/p/@YOUR_LINE_ID'
+      // LINEログイン確認
+      if (!liff.isLoggedIn()) {
+        liff.login()
+        return
+      }
 
-      // LINE公式アカウント追加ページを開く
-      window.open(lineAddFriendUrl, '_blank')
+      // ユーザープロフィール取得
+      const profile = await liff.getProfile()
+      const lineUserId = profile.userId
 
-      setMessage('LINE公式アカウントを友だち追加してください')
+      // 通知登録API呼び出し
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          line_user_id: lineUserId,
+          event_id: eventId
+        })
+      })
 
-      // TODO: 将来的にLIFFアプリで実装
-      // - LINE友だち追加後にユーザーIDを取得
-      // - APIに通知登録リクエストを送信
-      // await fetch('/api/notifications', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ line_user_id, event_id: eventId })
-      // })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '通知登録に失敗しました')
+      }
+
+      const data = await response.json()
+      setMessage('✅ 通知設定が完了しました！開催前日の朝8時にLINEで通知が届きます。')
 
     } catch (error) {
       console.error('Error setting up notification:', error)
-      setMessage('エラーが発生しました。もう一度お試しください。')
+      setErrorMessage(error instanceof Error ? error.message : 'エラーが発生しました。もう一度お試しください。')
     } finally {
       setIsNotifying(false)
     }
@@ -45,22 +89,25 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
     <div className="my-6">
       <button
         onClick={handleNotify}
-        disabled={isNotifying}
+        disabled={isNotifying || !isReady}
         className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold transition-all hover:shadow-xl hover:-translate-y-0.5 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
           background: 'linear-gradient(135deg, #06C755 0%, #00B900 100%)',
           color: '#FFFFFF'
         }}
       >
-        🔔 このイベントを通知する
+        {isNotifying ? '通知設定中...' : '🔔 このイベントを通知する'}
       </button>
 
       {message && (
         <div className="mt-4 p-4 rounded-lg bg-green-50 border border-green-200">
           <p className="text-sm text-green-800">{message}</p>
-          <p className="text-xs text-green-600 mt-2">
-            ※ 友だち追加後、再度このボタンをタップしてください
-          </p>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mt-4 p-4 rounded-lg bg-red-50 border border-red-200">
+          <p className="text-sm text-red-800">{errorMessage}</p>
         </div>
       )}
 
