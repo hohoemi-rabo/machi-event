@@ -115,10 +115,9 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
       setDebugInfo(prev => [...prev, `localStorageに保存: ${eventId}`])
       localStorage.setItem('pending_notification', eventId)
       setDebugInfo(prev => [...prev, 'LINEログイン画面へ遷移...'])
-      // 現在のURLに戻るように指定
-      liff.login({
-        redirectUri: window.location.href
-      })
+      // redirectUriを指定せず、LIFFエンドポイントURL（トップページ）経由で認証
+      // トップページで認証完了後、liff.stateで元のページにリダイレクトされる
+      liff.login()
       return
     }
 

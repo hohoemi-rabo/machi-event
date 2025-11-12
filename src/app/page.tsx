@@ -13,11 +13,40 @@ function LiffRedirectHandler() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const liffState = searchParams.get('liff.state')
-    if (liffState) {
-      console.log('[LIFF Redirect] Redirecting to:', liffState)
-      router.replace(liffState)
+    const handleLiffRedirect = async () => {
+      const liffState = searchParams.get('liff.state')
+      const code = searchParams.get('code')
+
+      // LINEログイン後のリダイレクトの場合
+      if (code && liffState) {
+        console.log('[LIFF] Authentication code detected, initializing LIFF...')
+
+        try {
+          const liffId = process.env.NEXT_PUBLIC_LIFF_ID
+          if (liffId) {
+            // LIFFを初期化して認証コードを処理
+            await import('@line/liff').then(async ({ default: liff }) => {
+              await liff.init({ liffId })
+              console.log('[LIFF] Initialized, login status:', liff.isLoggedIn())
+
+              // 認証完了後、元のページにリダイレクト
+              console.log('[LIFF Redirect] Redirecting to:', liffState)
+              router.replace(liffState)
+            })
+          }
+        } catch (error) {
+          console.error('[LIFF] Initialization failed:', error)
+          // エラーでもリダイレクトは実行
+          router.replace(liffState)
+        }
+      } else if (liffState) {
+        // 通常のリダイレクト（認証コードなし）
+        console.log('[LIFF Redirect] Redirecting to:', liffState)
+        router.replace(liffState)
+      }
     }
+
+    handleLiffRedirect()
   }, [searchParams, router])
 
   return null
