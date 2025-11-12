@@ -40,7 +40,10 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || '通知登録に失敗しました')
+        const errorMsg = errorData.details
+          ? `${errorData.error}: ${errorData.details} (code: ${errorData.code || 'unknown'})`
+          : errorData.error || '通知登録に失敗しました'
+        throw new Error(errorMsg)
       }
 
       const data = await response.json()

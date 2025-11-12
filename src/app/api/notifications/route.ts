@@ -61,7 +61,11 @@ export async function POST(request: NextRequest) {
 
       console.error('Failed to register notification:', error)
       return NextResponse.json(
-        { error: 'Failed to register notification' },
+        {
+          error: 'Failed to register notification',
+          details: error.message || String(error),
+          code: error.code
+        },
         { status: 500 }
       )
     }
