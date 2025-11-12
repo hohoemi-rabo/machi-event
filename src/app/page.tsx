@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import EventCard from '@/components/events/EventCard'
 import type { Event } from '@/types/event'
@@ -59,11 +60,23 @@ function getWeekRange() {
 }
 
 export default function HomePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [allEvents, setAllEvents] = useState<Event[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
   const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
+
+  // LIFFリダイレクト処理
+  useEffect(() => {
+    const liffState = searchParams.get('liff.state')
+    if (liffState) {
+      // liff.stateがある場合、そのパスにリダイレクト
+      console.log('[LIFF Redirect] Redirecting to:', liffState)
+      router.replace(liffState)
+    }
+  }, [searchParams, router])
 
   useEffect(() => {
     const fetchEvents = async () => {
