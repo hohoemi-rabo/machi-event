@@ -23,22 +23,24 @@ function LiffRedirectHandler() {
 
         try {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
+          console.log('[LIFF] LIFF ID:', liffId ? 'Found' : 'Not found')
+
           if (liffId) {
             // LIFFを初期化して認証コードを処理
             await import('@line/liff').then(async ({ default: liff }) => {
               await liff.init({ liffId })
               console.log('[LIFF] Initialized, login status:', liff.isLoggedIn())
-
-              // 認証完了後、元のページにリダイレクト
-              console.log('[LIFF Redirect] Redirecting to:', liffState)
-              router.replace(liffState)
             })
+          } else {
+            console.warn('[LIFF] LIFF ID not found in environment variables')
           }
         } catch (error) {
           console.error('[LIFF] Initialization failed:', error)
-          // エラーでもリダイレクトは実行
-          router.replace(liffState)
         }
+
+        // LIFF初期化の成否に関わらず、元のページにリダイレクト
+        console.log('[LIFF Redirect] Redirecting to:', liffState)
+        router.replace(liffState)
       } else if (liffState) {
         // 通常のリダイレクト（認証コードなし）
         console.log('[LIFF Redirect] Redirecting to:', liffState)
