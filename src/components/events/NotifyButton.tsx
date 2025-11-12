@@ -68,11 +68,17 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
         setDebugInfo(prev => [...prev, 'LIFF初期化中...'])
         await liff.init({ liffId })
         setDebugInfo(prev => [...prev, 'LIFF初期化完了'])
+
+        // 少し待ってからログイン状態をチェック（ログイン処理完了を待つ）
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         setIsReady(true)
 
         // ログイン後に自動的に通知登録を実行
         const isLoggedIn = liff.isLoggedIn()
+        const accessToken = liff.getAccessToken()
         setDebugInfo(prev => [...prev, `ログイン状態: ${isLoggedIn}`])
+        setDebugInfo(prev => [...prev, `アクセストークン: ${accessToken ? 'あり' : 'なし'}`])
 
         if (isLoggedIn) {
           const pendingNotification = localStorage.getItem('pending_notification')
