@@ -27,6 +27,16 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
 
         await liff.init({ liffId })
         setIsReady(true)
+
+        // ログイン後に自動的に通知登録を実行
+        if (liff.isLoggedIn()) {
+          const pendingNotification = localStorage.getItem('pending_notification')
+          if (pendingNotification === eventId) {
+            localStorage.removeItem('pending_notification')
+            // 自動的に通知登録を実行
+            await registerNotification()
+          }
+        }
       } catch (error) {
         console.error('LIFF initialization failed:', error)
         setErrorMessage('LIFF初期化エラー')
@@ -36,23 +46,13 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
     initializeLiff()
   }, [])
 
-  const handleNotify = async () => {
-    if (!isReady) {
-      setErrorMessage('LIFFの準備ができていません')
-      return
-    }
-
+  // 通知登録処理を分離
+  const registerNotification = async () => {
     setIsNotifying(true)
     setMessage(null)
     setErrorMessage(null)
 
     try {
-      // LINEログイン確認
-      if (!liff.isLoggedIn()) {
-        liff.login()
-        return
-      }
-
       // ユーザープロフィール取得
       const profile = await liff.getProfile()
       const lineUserId = profile.userId
@@ -83,6 +83,24 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
     } finally {
       setIsNotifying(false)
     }
+  }
+
+  const handleNotify = async () => {
+    if (!isReady) {
+      setErrorMessage('LIFFの準備ができていません')
+      return
+    }
+
+    // LINEログイン確認
+    if (!liff.isLoggedIn()) {
+      // ログイン後に通知登録を実行するためにイベントIDを保存
+      localStorage.setItem('pending_notification', eventId)
+      liff.login()
+      return
+    }
+
+    // 既にログイン済みの場合は直接実行
+    await registerNotification()
   }
 
   return (
