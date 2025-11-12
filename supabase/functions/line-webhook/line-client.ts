@@ -67,6 +67,248 @@ export async function replyMessage(
 }
 
 /**
+ * 地域選択Flexメッセージ作成（カルーセル形式）
+ * @returns Flexメッセージオブジェクト
+ */
+export function createRegionSelectionFlexMessage(): any {
+  return {
+    type: 'flex',
+    altText: '地域を選択してください',
+    contents: {
+      type: 'carousel',
+      contents: [
+        // カード1: 飯田下伊那北部
+        {
+          type: 'bubble',
+          size: 'mega',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '飯田下伊那北部',
+                weight: 'bold',
+                size: 'lg',
+                color: '#FFFFFF',
+                align: 'center'
+              }
+            ],
+            backgroundColor: '#8B5CF6',
+            paddingAll: 'md'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '地域を選択してください',
+                size: 'sm',
+                color: '#666666',
+                margin: 'md'
+              }
+            ],
+            paddingAll: 'md'
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '飯田市',
+                  data: 'action=select_region&region=飯田市'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '南信州',
+                  data: 'action=select_region&region=南信州'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '高森町',
+                  data: 'action=select_region&region=高森町'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '松川町',
+                  data: 'action=select_region&region=松川町'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '喬木村',
+                  data: 'action=select_region&region=喬木村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '豊丘村',
+                  data: 'action=select_region&region=豊丘村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '大鹿村',
+                  data: 'action=select_region&region=大鹿村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              }
+            ],
+            paddingAll: 'md'
+          }
+        },
+        // カード2: 飯田下伊那南部
+        {
+          type: 'bubble',
+          size: 'mega',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '飯田下伊那南部',
+                weight: 'bold',
+                size: 'lg',
+                color: '#FFFFFF',
+                align: 'center'
+              }
+            ],
+            backgroundColor: '#8B5CF6',
+            paddingAll: 'md'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '地域を選択してください',
+                size: 'sm',
+                color: '#666666',
+                margin: 'md'
+              }
+            ],
+            paddingAll: 'md'
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '阿智村',
+                  data: 'action=select_region&region=阿智村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '下条村',
+                  data: 'action=select_region&region=下条村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '泰阜村',
+                  data: 'action=select_region&region=泰阜村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '平谷村',
+                  data: 'action=select_region&region=平谷村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '売木村',
+                  data: 'action=select_region&region=売木村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '天龍村',
+                  data: 'action=select_region&region=天龍村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              },
+              {
+                type: 'button',
+                action: {
+                  type: 'postback',
+                  label: '根羽村',
+                  data: 'action=select_region&region=根羽村'
+                },
+                style: 'primary',
+                color: '#8B5CF6'
+              }
+            ],
+            paddingAll: 'md'
+          }
+        }
+      ]
+    }
+  }
+}
+
+/**
  * ウェルカムメッセージ送信
  * @param userId - LINEユーザーID
  */
@@ -78,44 +320,9 @@ export async function sendWelcomeMessage(userId: string): Promise<void> {
     },
     {
       type: 'text',
-      text: '🌟 できること:\n\n✅ 毎朝8時に新着イベントをお知らせ\n✅ 気になるイベントを個別に通知登録\n✅ 地域を選んでカスタマイズ\n\nまずは、お住まいの地域を選択してください👇',
-      quickReply: {
-        items: [
-          {
-            type: 'action',
-            action: {
-              type: 'postback',
-              label: '飯田市',
-              data: 'action=select_region&region=飯田市'
-            }
-          },
-          {
-            type: 'action',
-            action: {
-              type: 'postback',
-              label: '高森町',
-              data: 'action=select_region&region=高森町'
-            }
-          },
-          {
-            type: 'action',
-            action: {
-              type: 'postback',
-              label: '阿智村',
-              data: 'action=select_region&region=阿智村'
-            }
-          },
-          {
-            type: 'action',
-            action: {
-              type: 'postback',
-              label: 'その他',
-              data: 'action=select_region&region=その他'
-            }
-          }
-        ]
-      }
-    }
+      text: '🌟 できること:\n\n✅ 毎朝8時に新着イベントをお知らせ\n✅ 気になるイベントを個別に通知登録\n✅ 地域を選んでカスタマイズ\n\nまずは、お住まいの地域を選択してください👇'
+    },
+    createRegionSelectionFlexMessage()
   ]
 
   await sendMessage(userId, messages)

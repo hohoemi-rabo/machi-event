@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import type { LineWebhookEvent } from './types.ts'
-import { sendWelcomeMessage, replyMessage } from './line-client.ts'
+import { sendWelcomeMessage, sendMessage, replyMessage, createRegionSelectionFlexMessage } from './line-client.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -110,36 +110,9 @@ async function handleMessage(event: LineWebhookEvent): Promise<void> {
     await replyMessage(replyToken, [
       {
         type: 'text',
-        text: '地域を選択してください👇',
-        quickReply: {
-          items: [
-            {
-              type: 'action',
-              action: {
-                type: 'postback',
-                label: '飯田市',
-                data: 'action=select_region&region=飯田市'
-              }
-            },
-            {
-              type: 'action',
-              action: {
-                type: 'postback',
-                label: '高森町',
-                data: 'action=select_region&region=高森町'
-              }
-            },
-            {
-              type: 'action',
-              action: {
-                type: 'postback',
-                label: '阿智村',
-                data: 'action=select_region&region=阿智村'
-              }
-            }
-          ]
-        }
-      }
+        text: '地域を選択してください👇'
+      },
+      createRegionSelectionFlexMessage()
     ])
   } else if (text.includes('イベント') || text.includes('情報')) {
     await replyMessage(replyToken, [
@@ -190,7 +163,17 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
       return
     }
 
-    // ユーザーの地域設定を更新
+    // 1. すぐにローディングメッセージを返す（タップの反応を見せる）
+    if (replyToken) {
+      await replyMessage(replyToken, [
+        {
+          type: 'text',
+          text: `⏳ ${region}を設定しています...`
+        }
+      ])
+    }
+
+    // 2. ユーザーの地域設定を更新
     const { error } = await supabase
       .from('line_users')
       .update({
@@ -201,18 +184,24 @@ async function handlePostback(event: LineWebhookEvent): Promise<void> {
 
     if (error) {
       console.error('Failed to update user region:', error)
+
+      // エラー時のメッセージ送信
+      await sendMessage(userId, [
+        {
+          type: 'text',
+          text: '❌ 設定に失敗しました。もう一度お試しください。'
+        }
+      ])
       throw error
     }
 
-    // 確認メッセージ送信
-    if (replyToken) {
-      await replyMessage(replyToken, [
-        {
-          type: 'text',
-          text: `✅ ${region}のイベント情報をお届けします！\n\n毎朝8時に新着イベントを通知します。\nまた、Webサイトから気になるイベントを個別に通知登録することもできます。`
-        }
-      ])
-    }
+    // 3. 完了メッセージを送信
+    await sendMessage(userId, [
+      {
+        type: 'text',
+        text: `✅ ${region}のイベント情報をお届けします！\n\n毎朝8時に新着イベントを通知します。\nまた、Webサイトから気になるイベントを個別に通知登録することもできます。`
+      }
+    ])
 
     console.log(`User ${userId} region set to: ${region}`)
   }
