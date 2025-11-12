@@ -13,6 +13,7 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
   const [isNotifying, setIsNotifying] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string[]>([])
 
   // 通知登録処理（useCallbackで定義）
   const registerNotification = useCallback(async () => {
@@ -64,16 +65,27 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
           return
         }
 
+        setDebugInfo(prev => [...prev, 'LIFF初期化中...'])
         await liff.init({ liffId })
+        setDebugInfo(prev => [...prev, 'LIFF初期化完了'])
         setIsReady(true)
 
         // ログイン後に自動的に通知登録を実行
-        if (liff.isLoggedIn()) {
+        const isLoggedIn = liff.isLoggedIn()
+        setDebugInfo(prev => [...prev, `ログイン状態: ${isLoggedIn}`])
+
+        if (isLoggedIn) {
           const pendingNotification = localStorage.getItem('pending_notification')
+          setDebugInfo(prev => [...prev, `保存済み通知: ${pendingNotification}`])
+          setDebugInfo(prev => [...prev, `現在のイベント: ${eventId}`])
+
           if (pendingNotification === eventId) {
+            setDebugInfo(prev => [...prev, '通知登録を実行します...'])
             localStorage.removeItem('pending_notification')
             // 自動的に通知登録を実行
             await registerNotification()
+          } else {
+            setDebugInfo(prev => [...prev, '該当する保存済み通知なし'])
           }
         }
       } catch (error) {
@@ -94,12 +106,15 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
     // LINEログイン確認
     if (!liff.isLoggedIn()) {
       // ログイン後に通知登録を実行するためにイベントIDを保存
+      setDebugInfo(prev => [...prev, `localStorageに保存: ${eventId}`])
       localStorage.setItem('pending_notification', eventId)
+      setDebugInfo(prev => [...prev, 'LINEログイン画面へ遷移...'])
       liff.login()
       return
     }
 
     // 既にログイン済みの場合は直接実行
+    setDebugInfo(prev => [...prev, '既にログイン済み、直接登録実行'])
     await registerNotification()
   }
 
@@ -132,6 +147,18 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
       <p className="text-sm text-gray-600 mt-3">
         💡 開催前日の朝8時にLINEで通知が届きます
       </p>
+
+      {/* デバッグ情報（開発用） */}
+      {debugInfo.length > 0 && (
+        <div className="mt-4 p-3 rounded bg-gray-100 border border-gray-300">
+          <p className="text-xs font-bold mb-2">デバッグ情報:</p>
+          {debugInfo.map((info, index) => (
+            <p key={index} className="text-xs text-gray-700">
+              {index + 1}. {info}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
