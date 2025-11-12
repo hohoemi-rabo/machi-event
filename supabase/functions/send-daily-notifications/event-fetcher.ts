@@ -28,8 +28,8 @@ export async function getNewEventsForRegions(
   limit: number = 3
 ): Promise<Event[]> {
   const today = new Date().toISOString().split('T')[0]
-  const weekLater = new Date()
-  weekLater.setDate(weekLater.getDate() + 7)
+  const monthLater = new Date()
+  monthLater.setDate(monthLater.getDate() + 30)
 
   const { data, error } = await supabase
     .from('events')
@@ -37,7 +37,7 @@ export async function getNewEventsForRegions(
     .in('region', regions)
     .eq('is_new', true)
     .gte('event_date', today)
-    .lte('event_date', weekLater.toISOString().split('T')[0])
+    .lte('event_date', monthLater.toISOString().split('T')[0])
     .order('event_date', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(limit)
