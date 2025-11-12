@@ -34,19 +34,28 @@ const REGION_SITES: Record<string, string[]> = {
   大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
 }
 
-// 今週の日付範囲を取得
+// 今週の日付範囲を取得（YYYY-MM-DD形式の文字列で返す）
 function getWeekRange() {
   const today = new Date()
-  const dayOfWeek = today.getDay()
-  const start = new Date(today)
-  start.setDate(today.getDate() - dayOfWeek)
-  start.setHours(0, 0, 0, 0)
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const date = today.getDate()
+  const dayOfWeek = today.getDay() // 0=日曜、6=土曜
 
-  const end = new Date(start)
-  end.setDate(start.getDate() + 6)
-  end.setHours(23, 59, 59, 999)
+  // 今週の日曜日を計算
+  const startDate = new Date(year, month, date - dayOfWeek)
+  const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
 
-  return { start, end }
+  // 今週の土曜日を計算
+  const endDate = new Date(year, month, date - dayOfWeek + 6)
+  const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+
+  return {
+    start: startDate,
+    end: endDate,
+    startStr,
+    endStr
+  }
 }
 
 export default function HomePage() {
@@ -56,18 +65,25 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
 
-  const { start, end } = getWeekRange()
-
   useEffect(() => {
     const fetchEvents = async () => {
+      const { startStr, endStr } = getWeekRange()
+
+      console.log('=== 今週のイベント取得 ===')
+      console.log('開始日:', startStr)
+      console.log('終了日:', endStr)
+
       const supabase = createClient()
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .gte('event_date', start.toISOString().split('T')[0])
-        .lte('event_date', end.toISOString().split('T')[0])
+        .gte('event_date', startStr)
+        .lte('event_date', endStr)
         .order('event_date', { ascending: true })
         .order('event_time', { ascending: true })
+
+      console.log('取得件数:', data?.length || 0)
+      console.log('南信州ナビのデータ:', data?.filter(e => e.source_site === '南信州ナビ'))
 
       if (error) {
         console.error('Error fetching events:', error)
@@ -88,7 +104,7 @@ export default function HomePage() {
     }
 
     fetchEvents()
-  }, [start, end])
+  }, [])
 
   // 地域選択時の処理
   const handleRegionSelect = (region: string) => {
@@ -112,14 +128,17 @@ export default function HomePage() {
   // 選択したサイトの今週のイベントのみフィルタリング
   const filteredEvents = allEvents.filter((e) => e.source_site === selectedSite)
 
+  // 表示用の日付範囲
+  const { start: weekStart, end: weekEnd } = getWeekRange()
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* ヘッダー */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">今週のイベント</h1>
         <p className="text-gray-600">
-          {start.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })} 〜{' '}
-          {end.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
+          {weekStart.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })} 〜{' '}
+          {weekEnd.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
         </p>
       </div>
 

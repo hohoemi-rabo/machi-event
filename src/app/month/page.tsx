@@ -34,16 +34,27 @@ const REGION_SITES: Record<string, string[]> = {
   大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
 }
 
-// 今月の日付範囲を取得
+// 今月の日付範囲を取得（YYYY-MM-DD形式の文字列で返す）
 function getMonthRange() {
   const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  start.setHours(0, 0, 0, 0)
+  const year = now.getFullYear()
+  const month = now.getMonth()
 
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  end.setHours(23, 59, 59, 999)
+  // 今月の1日
+  const startDate = new Date(year, month, 1)
+  const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`
 
-  return { start, end }
+  // 今月の末日
+  const endDate = new Date(year, month + 1, 0)
+  const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+
+  return {
+    start: startDate,
+    end: endDate,
+    startStr,
+    endStr,
+    monthName: startDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+  }
 }
 
 export default function MonthPage() {
@@ -53,17 +64,15 @@ export default function MonthPage() {
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
 
-  const { start, end } = getMonthRange()
-  const monthName = start.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
-
   useEffect(() => {
     const fetchEvents = async () => {
+      const { startStr, endStr } = getMonthRange()
       const supabase = createClient()
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .gte('event_date', start.toISOString().split('T')[0])
-        .lte('event_date', end.toISOString().split('T')[0])
+        .gte('event_date', startStr)
+        .lte('event_date', endStr)
         .order('event_date', { ascending: true })
         .order('event_time', { ascending: true })
 
@@ -86,7 +95,7 @@ export default function MonthPage() {
     }
 
     fetchEvents()
-  }, [start, end])
+  }, [])
 
   // 地域選択時の処理
   const handleRegionSelect = (region: string) => {
@@ -109,6 +118,9 @@ export default function MonthPage() {
 
   // 選択したサイトの今月のイベントのみフィルタリング
   const filteredEvents = allEvents.filter((e) => e.source_site === selectedSite)
+
+  // 表示用の月名
+  const { monthName } = getMonthRange()
 
   return (
     <div className="container mx-auto px-4 py-8">

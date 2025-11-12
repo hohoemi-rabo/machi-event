@@ -64,7 +64,7 @@ export const SITES: SiteConfig[] = [
 
   {
     name: '飯田市役所',
-    url: 'https://www.city.iida.lg.jp/rss/10/life3-16.xml',
+    url: 'https://www.city.iida.lg.jp/rss/10/list1.xml',
     region: '飯田市',
     type: 'rss'
   },

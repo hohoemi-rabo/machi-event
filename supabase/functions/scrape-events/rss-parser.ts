@@ -1,4 +1,3 @@
-import { load } from 'https://esm.sh/cheerio@1.0.0-rc.12'
 import { EventData } from './types.ts'
 import { parseDateString } from './date-utils.ts'
 
@@ -30,35 +29,44 @@ export async function parseRssFeed(
 }
 
 /**
- * XML文字列からイベント情報を抽出
+ * XML文字列からイベント情報を抽出（正規表現ベース）
  */
 function parseRssXml(
   xml: string,
   siteName: string,
   region: string
 ): EventData[] {
-  const $ = load(xml, { xmlMode: true })
   const events: EventData[] = []
 
-  // RSS 2.0 形式 & RSS 1.0 (RDF) 形式
-  $('item').each((_i: number, element: any) => {
-    try {
-      const title = $(element).find('title').text().trim()
-      const link = $(element).find('link').text().trim()
-      const description = $(element).find('description').text().trim()
-      const pubDate = $(element).find('pubDate').text().trim()
+  // RSS 2.0 / RSS 1.0 (RDF) の <item> 要素を抽出
+  const itemMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/gi)
 
-      // RSS 1.0 (dc:date) - Cheerioのxmlモードでは名前空間プレフィックスも含めて検索
-      let dcDate = ''
-      $(element).children().each((_i: number, child: any) => {
-        if (child.name === 'dc:date' || child.name === 'date') {
-          dcDate = $(child).text().trim()
-          return false // break
-        }
-      })
+  for (const match of itemMatches) {
+    try {
+      const itemXml = match[1]
+
+      // タイトル抽出
+      const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+      const title = titleMatch ? decodeXmlEntities(titleMatch[1].trim()) : ''
+
+      // リンク抽出
+      const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i)
+      const link = linkMatch ? linkMatch[1].trim() : ''
+
+      // 説明抽出
+      const descMatch = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/i)
+      const description = descMatch ? stripCdata(descMatch[1].trim()) : ''
+
+      // pubDate抽出（RSS 2.0）
+      const pubDateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)
+      const pubDate = pubDateMatch ? pubDateMatch[1].trim() : ''
+
+      // dc:date抽出（RSS 1.0）
+      const dcDateMatch = itemXml.match(/<dc:date[^>]*>([\s\S]*?)<\/dc:date>/i)
+      const dcDate = dcDateMatch ? dcDateMatch[1].trim() : ''
 
       if (!title) {
-        return // タイトルがない場合はスキップ
+        continue // タイトルがない場合はスキップ
       }
 
       // 日付の優先順位: dc:date (RSS 1.0) → pubDate (RSS 2.0) → コンテンツから抽出
@@ -75,7 +83,7 @@ function parseRssXml(
       }
 
       if (!eventDate) {
-        return // 日付が取得できない場合はスキップ
+        continue // 日付が取得できない場合はスキップ
       }
 
       events.push({
@@ -90,18 +98,33 @@ function parseRssXml(
     } catch (error) {
       console.error('Error parsing RSS item:', error)
     }
-  })
+  }
 
-  // Atom形式も対応
-  $('entry').each((_i: number, element: any) => {
+  // Atom形式の <entry> 要素も対応
+  const entryMatches = xml.matchAll(/<entry[^>]*>([\s\S]*?)<\/entry>/gi)
+
+  for (const match of entryMatches) {
     try {
-      const title = $(element).find('title').text().trim()
-      const link = $(element).find('link').attr('href') || ''
-      const summary = $(element).find('summary').text().trim()
-      const updated = $(element).find('updated').text().trim()
+      const entryXml = match[1]
+
+      // タイトル抽出
+      const titleMatch = entryXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+      const title = titleMatch ? decodeXmlEntities(titleMatch[1].trim()) : ''
+
+      // リンク抽出
+      const linkMatch = entryXml.match(/<link[^>]*href=["']([^"']+)["']/i)
+      const link = linkMatch ? linkMatch[1] : ''
+
+      // summary抽出
+      const summaryMatch = entryXml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)
+      const summary = summaryMatch ? stripCdata(summaryMatch[1].trim()) : ''
+
+      // updated抽出
+      const updatedMatch = entryXml.match(/<updated[^>]*>([\s\S]*?)<\/updated>/i)
+      const updated = updatedMatch ? updatedMatch[1].trim() : ''
 
       if (!title) {
-        return
+        continue
       }
 
       const eventDate = parseDateFromIso8601(updated) ||
@@ -120,9 +143,28 @@ function parseRssXml(
     } catch (error) {
       console.error('Error parsing Atom entry:', error)
     }
-  })
+  }
 
   return events
+}
+
+/**
+ * CDATA セクションを除去
+ */
+function stripCdata(text: string): string {
+  return text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+}
+
+/**
+ * XML エンティティをデコード
+ */
+function decodeXmlEntities(text: string): string {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
 }
 
 /**
@@ -149,6 +191,7 @@ function parseDateFromRfc822(dateStr: string): string | null {
 /**
  * ISO 8601形式の日付をYYYY-MM-DD形式に変換
  * 例: "2025-11-07T10:00:00Z" → "2025-11-07"
+ * 注: タイムゾーンを考慮してローカル日付を使用
  */
 function parseDateFromIso8601(dateStr: string): string | null {
   try {
@@ -157,7 +200,12 @@ function parseDateFromIso8601(dateStr: string): string | null {
       return null
     }
 
-    return date.toISOString().split('T')[0]
+    // UTC変換せず、元のタイムゾーンの日付を使用
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
   } catch {
     return null
   }
