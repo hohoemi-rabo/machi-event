@@ -182,25 +182,39 @@ export default function AllEventsPage() {
                     : 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)'
                 }}
               >
-                <div className="text-sm text-white/90 font-medium mb-2">🕷️ 最新スクレイピング</div>
+                <div className="text-sm text-white/90 font-medium mb-2">🕷️ 自動スクレイピング</div>
                 {latestScrapingLog ? (
                   <>
-                    <div className="text-2xl font-bold text-white mb-2">
+                    <div className="text-3xl font-bold text-white mb-1">
                       {latestScrapingLog.status === 'success' ? '✅ 成功' : '❌ 失敗'}
                     </div>
-                    <div className="text-xs text-white/80">
+                    <div className="text-sm text-white/90 mb-1">
+                      {(() => {
+                        const now = new Date()
+                        const logTime = new Date(latestScrapingLog.created_at)
+                        const diffMs = now.getTime() - logTime.getTime()
+                        const diffMins = Math.floor(diffMs / 60000)
+                        const diffHours = Math.floor(diffMs / 3600000)
+                        const diffDays = Math.floor(diffMs / 86400000)
+
+                        if (diffMins < 60) {
+                          return `${diffMins}分前`
+                        } else if (diffHours < 24) {
+                          return `${diffHours}時間前`
+                        } else {
+                          return `${diffDays}日前`
+                        }
+                      })()}
+                    </div>
+                    <div className="text-xs text-white/70">
                       {new Date(latestScrapingLog.created_at).toLocaleString('ja-JP', {
-                        month: 'short',
-                        day: 'numeric',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </div>
-                    {latestScrapingLog.error_message && (
-                      <div className="text-xs text-white/70 mt-2 truncate" title={latestScrapingLog.error_message}>
-                        {latestScrapingLog.error_message}
-                      </div>
-                    )}
                   </>
                 ) : (
                   <div className="text-lg text-white">ログなし</div>
@@ -208,6 +222,42 @@ export default function AllEventsPage() {
               </div>
             </div>
           </div>
+
+          {/* スクレイピングエラー詳細（失敗時のみ表示） */}
+          {latestScrapingLog && latestScrapingLog.status === 'error' && latestScrapingLog.error_message && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4 text-red-800 flex items-center gap-2">
+                ⚠️ スクレイピングエラー詳細
+              </h2>
+              <div className="bg-white rounded-lg p-4 border border-red-200">
+                <div className="mb-3">
+                  <span className="text-sm font-semibold text-gray-700">対象サイト:</span>
+                  <span className="ml-2 text-gray-900">{latestScrapingLog.site_name}</span>
+                </div>
+                <div className="mb-3">
+                  <span className="text-sm font-semibold text-gray-700">発生日時:</span>
+                  <span className="ml-2 text-gray-900">
+                    {new Date(latestScrapingLog.created_at).toLocaleString('ja-JP', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    })}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-700 mb-2">エラーメッセージ:</div>
+                  <div className="bg-red-50 p-3 rounded border border-red-200">
+                    <pre className="text-sm text-red-800 whitespace-pre-wrap break-words font-mono">
+                      {latestScrapingLog.error_message}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 第1段階: 地域フィルター */}
           <div className="bg-white rounded-lg shadow p-6 mb-4">
