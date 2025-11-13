@@ -36,39 +36,64 @@ const REGION_SITES: Record<string, string[]> = {
 // 全サイトリスト（23サイト）
 const ALL_SITES = Object.values(REGION_SITES).flat()
 
+interface ScrapingLog {
+  id: string
+  site_name: string
+  status: string
+  events_count: number | null
+  error_message: string | null
+  created_at: string
+}
+
 export default function AllEventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
   const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
+  const [latestScrapingLog, setLatestScrapingLog] = useState<ScrapingLog | null>(null)
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       const supabase = createClient()
-      const { data, error } = await supabase
+
+      // イベントデータを取得
+      const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
         .order('event_date', { ascending: false, nullsFirst: false })
 
-      if (error) {
-        console.error('Error fetching events:', error)
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError)
         setLoading(false)
         return
       }
 
-      setEvents(data || [])
+      setEvents(eventsData || [])
 
       // 各サイトのイベント件数をカウント
       const counts: Record<string, number> = {}
       ALL_SITES.forEach((site) => {
-        counts[site] = (data || []).filter((e) => e.source_site === site).length
+        counts[site] = (eventsData || []).filter((e) => e.source_site === site).length
       })
       setSiteCounts(counts)
+
+      // 最新のスクレイピングログを取得
+      const { data: logData, error: logError } = await supabase
+        .from('scraping_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!logError && logData) {
+        setLatestScrapingLog(logData)
+      }
+
       setLoading(false)
     }
 
-    fetchEvents()
+    fetchData()
   }, [])
 
   // 地域選択時の処理
@@ -111,7 +136,7 @@ export default function AllEventsPage() {
           {/* データ集計 */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-bold mb-6 text-gray-800">📊 データ集計</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div
                 className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                 style={{
@@ -145,6 +170,41 @@ export default function AllEventsPage() {
                     : 0}
                   件
                 </div>
+              </div>
+              {/* 自動スクレイピング実行状況 */}
+              <div
+                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: latestScrapingLog?.status === 'success'
+                    ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+                    : latestScrapingLog?.status === 'error'
+                    ? 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)'
+                    : 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)'
+                }}
+              >
+                <div className="text-sm text-white/90 font-medium mb-2">🕷️ 最新スクレイピング</div>
+                {latestScrapingLog ? (
+                  <>
+                    <div className="text-2xl font-bold text-white mb-2">
+                      {latestScrapingLog.status === 'success' ? '✅ 成功' : '❌ 失敗'}
+                    </div>
+                    <div className="text-xs text-white/80">
+                      {new Date(latestScrapingLog.created_at).toLocaleString('ja-JP', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                    {latestScrapingLog.error_message && (
+                      <div className="text-xs text-white/70 mt-2 truncate" title={latestScrapingLog.error_message}>
+                        {latestScrapingLog.error_message}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-lg text-white">ログなし</div>
+                )}
               </div>
             </div>
           </div>
