@@ -10,12 +10,12 @@ Supabase Cronを使用して、スクレイピング処理を1日1回自動実�
 
 ## タスク
 
-- [ ] Supabase Cron設定
-- [ ] スケジュール定義（深夜2時実行）
-- [ ] 手動実行エンドポイント作成
-- [ ] 実行ログの記録
-- [ ] 実行状況ダッシュボード（将来）
-- [ ] アラート設定（失敗時）
+- [×] Supabase Cron設定 → GitHub Actions使用（代替手段）
+- [×] スケジュール定義（深夜2時実行） → 深夜3時に変更（ユーザー要望）
+- [×] 手動実行エンドポイント作成 → GitHub Actions workflow_dispatch で実装
+- [×] 実行ログの記録 → scraping_logs テーブルで既に実装済み
+- [×] 実行状況ダッシュボード（将来） → /all ページにカード実装（相対時刻＋エラー詳細）
+- [ ] アラート設定（失敗時） → 未実装（オプション、Slack通知機能は既存）
 
 ## 実装
 
@@ -189,11 +189,11 @@ async function getExecutionStats() {
 ```
 
 ## 受け入れ基準
-- [ ] Cronが毎日深夜2時に実行される
-- [ ] 手動実行エンドポイントが動作する
-- [ ] 実行ログが正しく記録される
-- [ ] 失敗時にアラートが送信される
-- [ ] 実行状況がダッシュボードで確認できる
+- [×] Cronが毎日深夜2時に実行される → 深夜3時に変更（.github/workflows/daily-scraping.yml）
+- [×] 手動実行エンドポイントが動作する → GitHub Actions workflow_dispatch で実装済み
+- [×] 実行ログが正しく記録される → scraping_logs テーブルに記録済み
+- [ ] 失敗時にアラートが送信される → 未実装（オプション、手動で /all ページ確認）
+- [×] 実行状況がダッシュボードで確認できる → /all ページで確認可能（カード＋エラー詳細）
 
 ## 関連ファイル
 - `docs/04-scraping-sites.md` - 22サイト対応
@@ -265,3 +265,29 @@ async function scrapeWithConcurrencyLimit(
 - Supabase Cron: https://supabase.com/docs/guides/database/extensions/pg_cron
 - Deno Cron: https://deno.land/api@v1.38.0?s=Deno.cron
 - Cron Expression: https://crontab.guru/
+- GitHub Actions: https://docs.github.com/en/actions
+
+## 実装サマリー（2025年11月13日完了）
+
+### 採用した方式
+- **GitHub Actions** を使用（Supabase Cron の代わり）
+  - 理由：無料枠が豊富、設定が簡単、既に LINE 通知で使用中
+  - ファイル：`.github/workflows/daily-scraping.yml`
+
+### 実行スケジュール
+- **スクレイピング**: 毎日深夜3時（03:00 JST = 18:00 UTC）
+- **LINE通知**: 毎日朝8時（08:00 JST = 23:00 UTC）
+
+### 実装内容
+1. ✅ 自動スクレイピング設定（daily-scraping.yml）
+2. ✅ 手動実行機能（workflow_dispatch）
+3. ✅ 実行ログ（GitHub Actions ログ + scraping_logs テーブル）
+4. ✅ 実行状況ダッシュボード（/all ページ）
+   - 相対時刻表示（○時間前）
+   - 成功/失敗のステータス
+   - エラー詳細表示（失敗時）
+
+### 未実装（オプション）
+- ❌ 失敗時の自動アラート（Slack 等への通知）
+  - 現状：/all ページで手動確認
+  - 将来的に必要なら実装可能
