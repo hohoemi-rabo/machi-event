@@ -1,0 +1,22 @@
+name: Daily Event Scraping
+
+on:
+  schedule:
+    # 毎日 18:00 UTC（日本時間 3:00）に実行
+    - cron: '0 18 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  scrape-events:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scrape Events from 23 Sites
+        run: |
+          echo "🕷️ Starting event scraping from 23 sites..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            https://dpeeozdddgmjsnrgxdpz.supabase.co/functions/v1/scrape-events \
+            -d '{}'
+          echo "✅ Scraping completed"
