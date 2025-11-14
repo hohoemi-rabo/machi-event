@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1-2完了、Phase 3基本実装完了（LINE連携Webhook・通知機能実装済み）。次: Cron設定・LIFF実装・地域選択拡張
+**プロジェクトステージ**: Phase 1-3完了（自動スクレイピング・Web UI・LINE連携）。Version 48: 全削除→再登録方式実装、並列処理で全23サイト正常動作。LINE通知一時無効化。
 
 ## 技術スタック
 
@@ -46,7 +46,7 @@ src/
   │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域色適用、ヘッダー色連動）
   │   ├── search/page.tsx        # イベント検索ページ（旧 events/）
   │   ├── event/[id]/
-  │   │   ├── page.tsx           # イベント詳細ページ（NotifyButton含む）
+  │   │   ├── page.tsx           # イベント詳細ページ（NotifyButton一時無効化）
   │   │   └── not-found.tsx      # 404ページ
   │   ├── api/
   │   │   └── notifications/
@@ -63,7 +63,7 @@ src/
   │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
   │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
   │   │   ├── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
-  │   │   └── NotifyButton.tsx   # LINE通知登録ボタン（LIFF未実装）
+  │   │   └── NotifyButton.tsx   # LINE通知登録ボタン（実装済み・現在一時無効化）
   │   └── ui/
   │       ├── FontSizeSwitcher.tsx # 文字サイズ切り替え（金色ボタン、ヘッダー内）
   │       └── ScrollToTopButton.tsx # ページトップスクロールボタン（右下固定）
@@ -124,6 +124,7 @@ docs/                            # チケット管理
   └── 13-17-*.md                 # Phase 3-4（未着手）
 
 .github/workflows/               # GitHub Actions
+  ├── daily-scraping.yml         # 毎朝3時の自動スクレイピング（Cron）
   └── daily-notifications.yml    # 毎朝8時の自動通知（Cron）
 
 next.config.ts                   # Next.js設定（画像最適化含む）
@@ -233,19 +234,25 @@ created_at: TIMESTAMP DEFAULT NOW()
 ### フェーズ1: 基盤構築 ✅ 完全完了
 - **23サイトからの自動スクレイピング（RSS 8サイト、HTML 15サイト - 全設定完了）**
 - 1日1回深夜帯実行（Cron設定完了、GitHub Actions）
-- 重複判定（タイトル＋開催日＋取得元）
-  - **Version 37で修正**: `.maybeSingle()` → `.limit(1)` で複数行対応
+  - **自動スクレイピング**: 毎朝3:00 AM JST（18:00 UTC）実行
+  - GitHub Actions Secrets: SUPABASE_ANON_KEY 設定済み
+- **全削除→再登録方式**（Version 48で実装）
+  - スクレイピング前に全イベントデータを自動削除
+  - RSSから消えたイベントも自動削除される
+  - 重複データ・古いデータの蓄積を完全防止
+  - LINE通知機能は一時無効化（NotifyButtonコメントアウト）
 - エラーハンドリングとログ記録
 - リトライロジック（指数バックオフ）
 - 構造変更検知
 - Slack通知機能
 - 日本語日付パース（YYYY.MM.DD形式含む7パターン対応）
-- データベース: **590件**のイベント（2025年11月時点）
-  - 重複データ9件削除済み（2025年11月10日）
-- Edge Functions: **Version 45** デプロイ済み（2025年11月12日）
-  - **Version 45の主要変更**: cheerio依存削除、正規表現ベースのRSSパーサー実装、DOMParserエラー解決
+- データベース: **571件**のイベント（2025年11月14日時点）
+- Edge Functions: **Version 48** デプロイ済み（2025年11月14日）
+  - **Version 46**: RSSタイムゾーンバグ修正（ISO 8601日付の1日ずれ解消）
+  - **Version 47**: 並列処理実装（Promise.allSettled、タイムアウト504エラー解消）
+  - **Version 48**: 全削除→再登録方式実装
+  - cheerio依存削除、正規表現ベースのRSSパーサー実装（Version 45）
   - 飯田市役所RSS URL更新（life3-16.xml → list1.xml）
-  - ISO 8601日付パースのタイムゾーン問題修正（1日ずれ解消）
 - 地域設定: 「その他」→「南信州」に変更（南信州ナビ用）
 
 ### フェーズ2: Web UI ✅ 完全完了
@@ -281,7 +288,7 @@ created_at: TIMESTAMP DEFAULT NOW()
 - テストページ（スクレイピング確認用）
 - ページリネーム: /events → /search
 
-### フェーズ3: LINE連携 ✅ 完全実装完了（2025年11月13日）
+### フェーズ3: LINE連携 ✅ 基本実装完了（2025年11月13日）
 - ✅ LINE公式アカウント統合（Webhook設定完了）
 - ✅ Webhook Edge Function実装（Version 8）
   - 友だち追加/ブロック処理
@@ -298,30 +305,38 @@ created_at: TIMESTAMP DEFAULT NOW()
 - ✅ 通知登録API実装（POST/GET/DELETE）
   - `/api/notifications` エンドポイント
   - 詳細なエラーメッセージ返却（デバッグ用）
-- ✅ NotifyButtonコンポーネント実装（イベント詳細ページ）
+- ✅ NotifyButtonコンポーネント実装（**現在一時無効化**）
   - LIFF SDK統合（@line/liff）
   - localStorage ベースの認証フロー
-  - デバッグ情報表示（本番環境で一時的に有効）
-- ✅ **LIFF実装完了**（Web→LINE ID取得→通知登録の完全自動化）
+  - Android/iPhone 動作確認済み
+  - イベント詳細ページでコメントアウト（全削除→再登録方式を優先）
+- ✅ **LIFF実装完了**
   - LINE Login チャネル作成・本番公開
   - LIFF ID: 2008483961-A2bmZD0X
   - エンドポイントURL: https://machi-event.vercel.app/
   - localStorage で return_url と pending_notification を管理
   - トップページで認証コード処理後、元のページにリダイレクト
-  - Android/iPhone 動作確認済み
 - ✅ **RLSポリシー設定完了**
   - SELECT: 公開読み取り許可
   - INSERT: 通知登録許可
   - DELETE: 通知削除許可
 - ✅ 地域選択機能動作確認（line_usersテーブルにデータ保存確認済み）
-- ✅ **Cron設定完了**（GitHub Actions、毎朝8時JST = 23:00 UTC）
-  - `.github/workflows/daily-notifications.yml` 作成
+- ✅ **Cron設定完了**（GitHub Actions）
+  - 毎朝3時JST: 自動スクレイピング（daily-scraping.yml）
+  - 毎朝8時JST: LINE通知送信（daily-notifications.yml）
   - send-daily-notifications（新着イベント通知、最大3件、30日以内）
   - send-event-reminders（開催前日リマインダー）
 
-**未完了（オプション機能）：**
-- ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応、優先度低）
-- ⏳ リッチメニュー設定（オプション）
+**現在の運用方針：**
+- 🔄 **全削除→再登録方式を優先**（Version 48で実装）
+  - LINE通知機能（NotifyButton）は一時無効化
+  - RSSから消えたイベントも自動削除される
+  - データの正確性を最優先
+
+**オプション機能：**
+- ⏳ LINE通知機能の再有効化（NotifyButtonコメント解除で即座に復活可能）
+- ⏳ 地域選択の拡張（現在3地域のみ → 14地域対応）
+- ⏳ リッチメニュー設定
 
 ### フェーズ4: 運用管理
 - スクレイピングログ確認
@@ -419,14 +434,19 @@ supabase/functions/scrape-events/
 
 #### index.ts（メインエントリーポイント）
 - Edge Function のHTTPハンドラー
-- 全サイトの並列スクレイピング実行
+- **スクレイピング前に全イベント自動削除**（Version 48）
+- **全サイトの並列スクレイピング実行**（Version 47、Promise.allSettled使用）
 - エラーハンドリングとログ記録
 - レスポンス生成
 
 ```typescript
 Deno.serve(async (req) => {
-  const results = await Promise.all(
-    sites.map(site => scrapeWithRetry(site))
+  // 全イベント削除
+  await supabase.from('events').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+  // 並列スクレイピング
+  const results = await Promise.allSettled(
+    sites.map(site => scrapeSingleSite(supabase, site))
   )
   return new Response(JSON.stringify(results))
 })
@@ -473,10 +493,8 @@ export const SITES: SiteConfig[] = [
 
 #### utils.ts（ユーティリティ）
 - `isDuplicate()`: 重複判定（title + event_date + source_site）
-  - **Version 37で修正**: `.maybeSingle()` → `.limit(1)` に変更
-  - 複数の重複レコードが存在してもエラーにならず、正しく重複判定を実行
-  - 修正前: 重複データが複数あるとPGRST116エラーで `return false` になり重複登録
-  - 修正後: `.limit(1)` で最大1件取得、`data.length > 0` で判定
+  - **注**: Version 48で全削除→再登録方式に変更されたため、現在は使用されていない
+  - 参考: Version 37で修正（`.maybeSingle()` → `.limit(1)`）
 - `insertEvent()`: イベント挿入
 - `logScrapingResult()`: スクレイピング結果ログ
 - `logDetailedError()`: 詳細エラーログ（error_type, stack_trace含む）
@@ -788,8 +806,8 @@ curl http://localhost:54321/functions/v1/scrape-events
 - ✅ データベース設計・実装（`01-02`）
   - eventsテーブル、scraping_logsテーブル作成
   - RLSポリシー設定完了
-  - 現在**590件**のイベントデータ（2025年11月時点）
-  - 重複データ9件削除（2025年11月10日）
+  - 現在**571件**のイベントデータ（2025年11月14日時点）
+  - **全削除→再登録方式**により常に最新状態を維持
 - ✅ スクレイピング基盤構築（`03-04`）
   - Edge Functions実装（11ファイル構成）
   - **23サイト全設定完了（RSS 8 + HTML 15）**
@@ -809,8 +827,10 @@ curl http://localhost:54321/functions/v1/scrape-events
   - リトライロジック（指数バックオフ）
   - 構造変更検知
   - Slack通知機能
-  - **重複判定修正（Version 37）**: `.maybeSingle()` → `.limit(1)`
-- ✅ Edge Functions デプロイ完了（**Version 37** - 最新）
+- ✅ Edge Functions デプロイ完了（**Version 48** - 最新）
+  - **Version 46**: RSSタイムゾーンバグ修正（2025年11月14日）
+  - **Version 47**: 並列処理実装、504タイムアウトエラー解消（2025年11月14日）
+  - **Version 48**: 全削除→再登録方式実装（2025年11月14日）
 - ✅ テストページ実装（http://localhost:3000/test）
   - 23サイト全体のスクレイピング状況確認
   - 2段階フィルター機能
@@ -818,9 +838,11 @@ curl http://localhost:54321/functions/v1/scrape-events
 
 ### Phase 1.5: 定期実行 ✅ 完了
 - ✅ Cron設定（`06-cron-setup.md`）
-  - GitHub Actions で毎朝8時JST（23:00 UTC）に自動実行
-  - send-daily-notifications（新着イベント通知）
-  - send-event-reminders（開催前日リマインダー）
+  - **自動スクレイピング**: GitHub Actions で毎朝3時JST（18:00 UTC）実行
+    - SUPABASE_ANON_KEY 設定済み（GitHub Secrets）
+  - **LINE通知**: GitHub Actions で毎朝8時JST（23:00 UTC）実行
+    - send-daily-notifications（新着イベント通知）
+    - send-event-reminders（開催前日リマインダー）
 
 ### Phase 2: Web UI ✅ 完全完了
 - ✅ フロントエンド基盤構築（`07`）
@@ -897,17 +919,21 @@ curl http://localhost:54321/functions/v1/scrape-events
 - ✅ LIFF実装（個別イベント通知）
   - LINE Login チャネル作成・本番公開
   - LIFF SDK統合（@line/liff）
-  - NotifyButton コンポーネント実装
+  - NotifyButton コンポーネント実装（**現在一時無効化**）
   - localStorage ベースの認証フロー
   - 通知登録API（/api/notifications）
   - Android/iPhone 動作確認済み
 - ✅ GitHub Actions Cron設定（毎朝8時JST）
 - ✅ NEWバッジロジック修正（未来イベント＋登録7日以内）
 
+**現在の状態：**
+- 🔄 **NotifyButton一時無効化**（全削除→再登録方式を優先）
+  - イベント詳細ページでコメントアウト済み
+  - 必要時にコメント解除で即座に復活可能
+
 **残タスク（オプション）：**
 - ⏳ 地域選択の拡張（現在3地域 → 14地域対応）
 - ⏳ リッチメニュー設定
-- ⏳ デバッグ情報を本番環境で非表示にする
 
 ### Phase 4: 運用・保守 ⏳ 一部実施中
 - ✅ Vercel本番デプロイ（https://machi-event.vercel.app/）
@@ -1248,27 +1274,39 @@ grep -r "\- \[×\]" docs/ | wc -l
 - **スクレイピング対象**: 23サイト（飯田市および南信州エリア）
   - RSS形式: 8サイト（全設定完了）
   - HTML形式: 15サイト（全設定完了）
-  - 現在**590件**のイベントデータ（2025年11月時点）
-  - Edge Functions: **Version 45** デプロイ済み（2025年11月12日）
-  - **Version 45の変更点**: cheerio依存削除、正規表現ベースのRSSパーサー、飯田市役所URL更新
+  - 現在**571件**のイベントデータ（2025年11月14日時点）
+  - Edge Functions: **Version 48** デプロイ済み（2025年11月14日）
+  - **Version 46**: RSSタイムゾーンバグ修正（ISO 8601日付の1日ずれ解消）
+  - **Version 47**: 並列処理実装（Promise.allSettled、504タイムアウトエラー解消）
+  - **Version 48**: 全削除→再登録方式実装（RSSから消えたイベントも自動削除）
+- **スクレイピング方式**: 全削除→再登録
+  - スクレイピング前に全イベントデータを自動削除
+  - 重複データ・古いデータの蓄積を完全防止
+  - RSSから消えたイベントも自動削除される
+  - LINE通知機能は一時無効化（NotifyButtonコメントアウト）
 - **地域設定**: 14地域対応（「南信州」含む）
   - 南信州ナビ: region='南信州'（広域対応）
   - その他サイト: 各市町村名
 - **robots.txt遵守**: スクレイピング実装時は必ず確認
 - **エラーハンドリング**: サイト構造変更の検知機能を実装済み
-- **重複判定**: Version 37で修正済み（`.limit(1)` 使用）
+- **並列処理**: Promise.allSettledで全23サイトを同時スクレイピング
+  - タイムアウト（504）エラーを解消
+  - 実行時間の大幅短縮
+  - 一部サイトの失敗が他のサイトに影響しない
 - **HTMLサイト設定フロー**: HTML構造確認 → セレクタ設定 → デプロイ → テストページで検証
-- **データベースクリーンアップ**:
-  - コード修正後は古いデータを削除してから再スクレイピング
-  - 重複データは定期的に確認・削除
 - **日付パース重要事項**: 年付き形式（YYYY.MM.DD等）を年なし形式より優先してマッチ
 - **テストページ**: http://localhost:3000/test で全サイトのスクレイピング状況確認可能
 - **タイムゾーン問題**: `toISOString()`は使わず、ローカルタイムゾーンで日付計算（フロントエンド・バックエンド共通）
+  - RSSパーサー: ISO 8601日付を正規表現で直接抽出（Version 46で修正）
 - **RSS URL変更**: 自治体サイトのRSS URLが変更されることがあるため、定期的に確認が必要
   - 飯田市役所: 2025年11月にURL変更（life3-16.xml → list1.xml）
 - **環境変化への対応**: Denoランタイムの更新により既存コードが動かなくなることがある
   - 外部ライブラリへの依存を最小限に抑えることが重要
   - DOMParserエラー（Version 45で解決）がその一例
+- **GitHub Actions**: 自動実行設定完了
+  - 毎朝3時JST: 自動スクレイピング（daily-scraping.yml）
+  - 毎朝8時JST: LINE通知送信（daily-notifications.yml）
+  - SUPABASE_ANON_KEY設定済み（GitHub Secrets）
 - **UI実装**:
   - 2段階フィルター（地域→サイト）
   - 地域色ベースのデザイン統一（14地域固有色）

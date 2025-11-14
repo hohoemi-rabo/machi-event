@@ -195,12 +195,21 @@ function parseDateFromRfc822(dateStr: string): string | null {
  */
 function parseDateFromIso8601(dateStr: string): string | null {
   try {
+    // ISO 8601形式の日付文字列から日付部分（YYYY-MM-DD）を直接抽出
+    // 例: "2025-11-14T00:00:00+09:00" → "2025-11-14"
+    // タイムゾーン変換による日付のずれを防ぐ
+    const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (dateMatch) {
+      const [, year, month, day] = dateMatch
+      return `${year}-${month}-${day}`
+    }
+
+    // マッチしない場合はDateオブジェクトを使用（フォールバック）
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) {
       return null
     }
 
-    // UTC変換せず、元のタイムゾーンの日付を使用
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
