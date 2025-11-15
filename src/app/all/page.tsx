@@ -52,6 +52,8 @@ export default function AllEventsPage() {
   const [loading, setLoading] = useState(true)
   const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
   const [latestScrapingLog, setLatestScrapingLog] = useState<ScrapingLog | null>(null)
+  const [animatedEventCount, setAnimatedEventCount] = useState(0)
+  const [animatedSiteCount, setAnimatedSiteCount] = useState(0)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +98,18 @@ export default function AllEventsPage() {
     fetchData()
   }, [])
 
+  // アニメーション用のuseEffect
+  useEffect(() => {
+    if (!loading) {
+      // データ読み込み完了後、少し遅延させてからアニメーション開始
+      const timer = setTimeout(() => {
+        setAnimatedEventCount(events.length)
+        setAnimatedSiteCount(Object.values(siteCounts).filter((c) => c > 0).length)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, events.length, siteCounts])
+
   // 地域選択時の処理
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region)
@@ -123,7 +137,7 @@ export default function AllEventsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">全イベント</h1>
         <p className="text-gray-600">
-          全26サイトのイベント情報を確認できます（RSS 8サイト + HTML 18サイト）
+          全26サイトのイベント情報を確認できます
         </p>
       </div>
 
@@ -134,91 +148,152 @@ export default function AllEventsPage() {
       ) : (
         <>
           {/* データ集計 */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-bold mb-6 text-gray-800">📊 データ集計</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div
-                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                style={{
-                  background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)'
-                }}
-              >
-                <div className="text-sm text-white/90 font-medium mb-2">📊 総イベント数</div>
-                <div className="text-4xl font-bold text-white">{events.length}件</div>
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-2xl shadow-2xl p-8 mb-6 border border-cyan-500/30">
+            <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+              <span>📈</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">データ集計</span>
+            </h2>
+
+            <div className="space-y-6">
+              {/* 総イベント数バー */}
+              <div className="group">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-lg font-bold text-cyan-300 tracking-wider">📊 総イベント数</span>
+                  <span className="text-2xl font-black text-white">{events.length} 件</span>
+                </div>
+                <div className="h-4 bg-gray-700/50 rounded-full overflow-hidden backdrop-blur-sm border border-blue-500/30">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${Math.min((animatedEventCount / 602) * 100, 100)}%`,
+                      boxShadow: '0 0 20px rgba(59, 130, 246, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)'
+                    }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-400 mt-1 text-right">最大 602 件</div>
               </div>
-              <div
-                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                style={{
-                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
-                }}
-              >
-                <div className="text-sm text-white/90 font-medium mb-2">🌐 取得元サイト</div>
-                <div className="text-4xl font-bold text-white">
-                  {Object.values(siteCounts).filter((c) => c > 0).length} / 26
+
+              {/* 取得元サイトバー */}
+              <div className="group">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-lg font-bold text-emerald-300 tracking-wider">🌐 取得元サイト</span>
+                  <span className="text-2xl font-black text-white">
+                    {Object.values(siteCounts).filter((c) => c > 0).length} / 26 サイト
+                  </span>
+                </div>
+                <div className="h-4 bg-gray-700/50 rounded-full overflow-hidden backdrop-blur-sm border border-emerald-500/30">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${(animatedSiteCount / 26) * 100}%`,
+                      boxShadow: '0 0 20px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)'
+                    }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-400 mt-1 text-right">
+                  成功率 {Math.round((animatedSiteCount / 26) * 100)}%
                 </div>
               </div>
-              <div
-                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                style={{
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)'
-                }}
-              >
-                <div className="text-sm text-white/90 font-medium mb-2">📈 平均収集数</div>
-                <div className="text-4xl font-bold text-white">
-                  {Object.values(siteCounts).filter((c) => c > 0).length > 0
-                    ? Math.round(events.length / Object.values(siteCounts).filter((c) => c > 0).length)
-                    : 0}
-                  件
-                </div>
-              </div>
-              {/* 自動スクレイピング実行状況 */}
-              <div
-                className="rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+
+              {/* 自動スクレイピングステータス */}
+              <div className="relative mt-8 rounded-xl p-8 border-2 overflow-hidden group"
                 style={{
                   background: latestScrapingLog?.status === 'success'
-                    ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+                    ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(34, 211, 238, 0.25) 100%)'
                     : latestScrapingLog?.status === 'error'
-                    ? 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)'
-                    : 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)'
+                    ? 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(239, 68, 68, 0.25) 100%)'
+                    : 'linear-gradient(135deg, rgba(75, 85, 99, 0.15) 0%, rgba(107, 114, 128, 0.25) 100%)',
+                  borderColor: latestScrapingLog?.status === 'success'
+                    ? 'rgba(6, 182, 212, 0.6)'
+                    : latestScrapingLog?.status === 'error'
+                    ? 'rgba(239, 68, 68, 0.6)'
+                    : 'rgba(107, 114, 128, 0.6)',
+                  boxShadow: latestScrapingLog?.status === 'success'
+                    ? '0 0 30px rgba(6, 182, 212, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.05)'
+                    : latestScrapingLog?.status === 'error'
+                    ? '0 0 30px rgba(239, 68, 68, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.05)'
+                    : '0 0 20px rgba(107, 114, 128, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.05)'
                 }}
               >
-                <div className="text-sm text-white/90 font-medium mb-2">🕷️ 自動スクレイピング</div>
-                {latestScrapingLog ? (
-                  <>
-                    <div className="text-3xl font-bold text-white mb-1">
-                      {latestScrapingLog.status === 'success' ? '✅ 成功' : '❌ 失敗'}
-                    </div>
-                    <div className="text-sm text-white/90 mb-1">
-                      {(() => {
-                        const now = new Date()
-                        const logTime = new Date(latestScrapingLog.created_at)
-                        const diffMs = now.getTime() - logTime.getTime()
-                        const diffMins = Math.floor(diffMs / 60000)
-                        const diffHours = Math.floor(diffMs / 3600000)
-                        const diffDays = Math.floor(diffMs / 86400000)
+                {/* 背景アニメーション */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
 
-                        if (diffMins < 60) {
-                          return `${diffMins}分前`
-                        } else if (diffHours < 24) {
-                          return `${diffHours}時間前`
-                        } else {
-                          return `${diffDays}日前`
-                        }
-                      })()}
+                <div className="relative z-10">
+                  {/* ヘッダー */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl">🕷️</div>
+                      <div>
+                        <div className="text-xs text-cyan-400 font-bold tracking-widest uppercase">自動更新状況</div>
+                        <div className="text-sm text-gray-400 font-mono mt-1">Daily Execution</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-white/70">
-                      {new Date(latestScrapingLog.created_at).toLocaleString('ja-JP', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                    {latestScrapingLog && (
+                      <div
+                        className="px-4 py-2 rounded-lg font-black text-sm tracking-wider"
+                        style={{
+                          background: latestScrapingLog.status === 'success'
+                            ? 'linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%)'
+                            : 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)',
+                          boxShadow: latestScrapingLog.status === 'success'
+                            ? '0 0 20px rgba(6, 182, 212, 0.6)'
+                            : '0 0 20px rgba(239, 68, 68, 0.6)'
+                        }}
+                      >
+                        {latestScrapingLog.status === 'success' ? '✅ SUCCESS' : '❌ FAILED'}
+                      </div>
+                    )}
+                  </div>
+
+                  {latestScrapingLog ? (
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* 経過時間 */}
+                      <div className="bg-black/30 rounded-lg p-4 border border-white/10">
+                        <div className="text-xs text-gray-400 font-mono mb-2">ELAPSED TIME</div>
+                        <div className="text-2xl font-bold text-white">
+                          {(() => {
+                            const now = new Date()
+                            const logTime = new Date(latestScrapingLog.created_at)
+                            const diffMs = now.getTime() - logTime.getTime()
+                            const diffMins = Math.floor(diffMs / 60000)
+                            const diffHours = Math.floor(diffMs / 3600000)
+                            const diffDays = Math.floor(diffMs / 86400000)
+
+                            if (diffMins < 60) {
+                              return `${diffMins}分前`
+                            } else if (diffHours < 24) {
+                              return `${diffHours}時間前`
+                            } else {
+                              return `${diffDays}日前`
+                            }
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* 実行日時 */}
+                      <div className="bg-black/30 rounded-lg p-4 border border-white/10">
+                        <div className="text-xs text-gray-400 font-mono mb-2">EXECUTION TIME</div>
+                        <div className="text-lg font-mono font-bold text-white">
+                          {new Date(latestScrapingLog.created_at).toLocaleString('ja-JP', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono mt-1">
+                          {new Date(latestScrapingLog.created_at).getFullYear()}
+                        </div>
+                      </div>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-lg text-white">ログなし</div>
-                )}
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-3">📭</div>
+                      <div className="text-xl font-bold text-white/50">NO LOG DATA</div>
+                      <div className="text-sm text-gray-500 mt-2">スクレイピングログがありません</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -347,7 +422,10 @@ export default function AllEventsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b">
+                  <thead
+                    className="border-b-2"
+                    style={{ borderColor: getRegionColor(selectedRegion).bg }}
+                  >
                     <tr
                       style={{
                         backgroundColor: getRegionColor(selectedRegion).bg,
@@ -358,7 +436,7 @@ export default function AllEventsPage() {
                         タイトル
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        開催日
+                        更新日
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         地域
@@ -374,21 +452,29 @@ export default function AllEventsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {filteredEvents.map((event) => (
                       <tr
                         key={event.id}
-                        className="hover:bg-opacity-80 transition-colors"
+                        className="hover:bg-opacity-80 transition-colors border-b"
                         style={{
-                          backgroundColor: getRegionLightBg(event.region)
+                          backgroundColor: getRegionLightBg(event.region),
+                          borderColor: getRegionColor(event.region).bg
                         }}
                       >
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          {event.title}
+                          <a
+                            href={event.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+                          >
+                            {event.title}
+                          </a>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                          {event.event_date
-                            ? new Date(event.event_date).toLocaleDateString('ja-JP')
+                          {event.updated_at
+                            ? new Date(event.updated_at).toLocaleDateString('ja-JP')
                             : '日付なし'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">

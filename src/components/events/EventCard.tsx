@@ -23,9 +23,9 @@ export default function EventCard({ event }: EventCardProps) {
   const isNew = eventDate >= today && createdAt > sevenDaysAgo
 
   return (
-    <Link href={`/event/${event.id}`} className="block">
+    <Link href={`/event/${event.id}`} className="block cursor-pointer">
       <div
-        className="rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 h-full border border-gray-100"
+        className="rounded-lg shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 p-4 h-full border border-gray-100"
         style={{ backgroundColor: lightBg }}
       >
         {event.image_url && (
