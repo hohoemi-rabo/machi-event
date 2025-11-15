@@ -249,5 +249,29 @@ export const SITES: SiteConfig[] = [
       date: 'h3.wp-block-post-title a',
       link: 'h3.wp-block-post-title a'
     }
+  },
+  {
+    name: '天龍峡温泉観光協会',
+    url: 'https://tenryukyou.com/blog/',
+    region: '飯田市',
+    type: 'html',
+    selector: 'article.post-item',
+    fields: {
+      title: 'h2.entry-title a',
+      date: 'div.date_label',
+      link: 'h2.entry-title a'
+    }
+  },
+  {
+    name: '遠山観光協会',
+    url: 'https://tohyamago.com/',
+    region: '飯田市',
+    type: 'html',
+    selector: 'li.p-postList__item',
+    fields: {
+      title: 'h2.p-postList__title',
+      date: 'time.c-postTimes__posted',
+      link: 'a.p-postList__link'
+    }
   }
 ]

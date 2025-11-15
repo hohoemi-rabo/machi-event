@@ -55,7 +55,7 @@ function LiffRedirectHandler() {
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所'],
+  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会'],
   南信州: ['南信州ナビ'],
   高森町: ['高森町役場'],
   松川町: ['松川町役場'],

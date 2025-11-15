@@ -6,7 +6,7 @@ import type { Event } from '@/types/event'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所'],
+  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会'],
   南信州: ['南信州ナビ'],
   高森町: ['高森町役場'],
   松川町: ['松川町役場'],
@@ -100,7 +100,7 @@ export default function TestPage() {
             テスト - スクレイピング確認ページ
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            全23サイトのスクレイピング状況を確認できます（RSS 8サイト + HTML 15サイト）
+            全25サイトのスクレイピング状況を確認できます（RSS 8サイト + HTML 17サイト）
           </p>
         </div>
       </header>
@@ -253,7 +253,7 @@ export default function TestPage() {
                 <div className="bg-green-50 rounded-lg p-4">
                   <div className="text-sm text-gray-600">スクレイピング成功サイト</div>
                   <div className="text-3xl font-bold text-green-600">
-                    {Object.values(siteCounts).filter((c) => c > 0).length} / 23サイト
+                    {Object.values(siteCounts).filter((c) => c > 0).length} / 25サイト
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">

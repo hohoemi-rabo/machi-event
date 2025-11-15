@@ -7,7 +7,7 @@ import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所'],
+  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会'],
   南信州: ['南信州ナビ'],
   高森町: ['高森町役場'],
   松川町: ['松川町役場'],
@@ -33,7 +33,7 @@ const REGION_SITES: Record<string, string[]> = {
   大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
 }
 
-// 全サイトリスト（23サイト）
+// 全サイトリスト（25サイト）
 const ALL_SITES = Object.values(REGION_SITES).flat()
 
 interface ScrapingLog {
