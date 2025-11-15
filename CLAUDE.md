@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1-3完了（自動スクレイピング・Web UI・LINE連携）。Version 48: 全削除→再登録方式実装、並列処理で全23サイト正常動作。LINE通知一時無効化。
+**プロジェクトステージ**: Phase 1-3完了（自動スクレイピング・Web UI・LINE連携）。Version 51: 全26サイト対応（飯田市に3サイト追加）、お問い合わせ機能実装（Resend）、プライバシーポリシー実装。LINE通知一時無効化。
 
 ## 技術スタック
 
@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **スタイリング**: Tailwind CSS 3.4.17
 - **データベース**: Supabase (PostgreSQL)
 - **バックエンド**: Supabase Edge Functions
+- **メール送信**: Resend（お問い合わせフォーム）
 - **ホスティング**: Vercel
 
 ## 開発コマンド
@@ -42,22 +43,26 @@ src/
   │   ├── layout.tsx             # ルートレイアウト（ScrollToTopButton含む、Noto Sans JP）
   │   ├── page.tsx               # トップページ（今週のイベント、2段階フィルター、地域色ホバー）
   │   ├── globals.css            # グローバルスタイル（NEWバッジアニメーション、文字サイズ可変）
+  │   ├── icon.png               # ファビコン（512×512px推奨）
   │   ├── month/page.tsx         # 今月のイベント（2段階フィルター、地域色ホバー）
-  │   ├── all/page.tsx           # 全イベントページ（テーブル形式、地域色適用、ヘッダー色連動）
+  │   ├── all/page.tsx           # 全イベントページ（テーブル形式、サイバー風データ集計）
   │   ├── search/page.tsx        # イベント検索ページ（旧 events/）
+  │   ├── contact/page.tsx       # お問い合わせページ（Resend、SNS案内付き）
+  │   ├── privacy/page.tsx       # プライバシーポリシー
   │   ├── event/[id]/
   │   │   ├── page.tsx           # イベント詳細ページ（NotifyButton一時無効化）
   │   │   └── not-found.tsx      # 404ページ
   │   ├── api/
+  │   │   ├── contact/
+  │   │   │   └── route.ts       # お問い合わせAPI（Resend経由メール送信）
   │   │   └── notifications/
   │   │       └── route.ts       # 通知登録API（POST/GET/DELETE）
-  │   ├── logs/page.tsx          # スクレイピングログ
-  │   └── test/page.tsx          # テストページ（スクレイピング確認用）
+  │   └── logs/page.tsx          # スクレイピングログ
   │
   ├── components/
   │   ├── layout/
-  │   │   ├── Header.tsx         # ヘッダー（紫グラデーション、ナビアイコン、白グロー効果）
-  │   │   └── Footer.tsx         # フッター（紫グラデーション）
+  │   │   ├── Header.tsx         # ヘッダー（紫グラデーション、ナビアイコン、SNSリンク、お問い合わせ）
+  │   │   └── Footer.tsx         # フッター（紫グラデーション、SNSリンク、プライバシーポリシー）
   │   ├── events/
   │   │   ├── EventCard.tsx      # イベントカード（地域色背景、NEWバッジ虹色・右端配置）
   │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
@@ -87,7 +92,7 @@ supabase/functions/              # Supabase Edge Functions
   │   ├── retry.ts               # リトライロジック
   │   ├── structure-checker.ts   # 構造変更検知
   │   ├── alert.ts               # Slack通知
-  │   ├── sites-config.ts        # 23サイト設定（RSS 8 + HTML 15）
+  │   ├── sites-config.ts        # 26サイト設定（RSS 8 + HTML 18）
   │   ├── html-parser.ts         # HTMLパーサー
   │   ├── rss-parser.ts          # 正規表現ベースRSSパーサー（cheerio依存なし、RSS 1.0/2.0/Atom対応）
   │   └── date-utils.ts          # 日付パース
@@ -224,15 +229,17 @@ created_at: TIMESTAMP DEFAULT NOW()
 |------|-----|------|
 | トップページ | `/` | 今週のイベント一覧（2段階フィルター：地域→サイト） |
 | 月間イベント | `/month` | 今月のイベント一覧（2段階フィルター：地域→サイト） |
-| 全イベント | `/all` | 全イベント一覧（テーブル形式、スクレイピングサマリー付き） |
+| 全イベント | `/all` | 全イベント一覧（テーブル形式、サイバー風データ集計） |
 | イベント検索 | `/search` | 地域・日付・キーワード検索（旧 /events） |
 | イベント詳細 | `/event/[id]` | 個別イベント詳細（関連イベント表示） |
-| テストページ | `/test` | スクレイピング確認用（開発用） |
+| お問い合わせ | `/contact` | お問い合わせフォーム（Resend、SNS案内付き） |
+| プライバシーポリシー | `/privacy` | プライバシーポリシー |
 
 ## 主要機能要件
 
 ### フェーズ1: 基盤構築 ✅ 完全完了
-- **23サイトからの自動スクレイピング（RSS 8サイト、HTML 15サイト - 全設定完了）**
+- **26サイトからの自動スクレイピング（RSS 8サイト、HTML 18サイト - 全設定完了）**
+  - 飯田市: 天龍峡温泉観光協会、遠山観光協会、飯田市美術博物館を追加（Version 51）
 - 1日1回深夜帯実行（Cron設定完了、GitHub Actions）
   - **自動スクレイピング**: 毎朝3:00 AM JST（18:00 UTC）実行
   - GitHub Actions Secrets: SUPABASE_ANON_KEY 設定済み
