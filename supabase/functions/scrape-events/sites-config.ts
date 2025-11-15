@@ -273,5 +273,17 @@ export const SITES: SiteConfig[] = [
       date: 'time.c-postTimes__posted',
       link: 'a.p-postList__link'
     }
+  },
+  {
+    name: '飯田市美術博物館',
+    url: 'https://www.iida-museum.org/info/',
+    region: '飯田市',
+    type: 'html',
+    selector: 'div.blog-item.mas-item',
+    fields: {
+      title: 'h1.entry-title a',
+      date: 'time.entry-date.published',
+      link: 'h1.entry-title a'
+    }
   }
 ]

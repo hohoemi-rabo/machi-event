@@ -7,7 +7,7 @@ import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会'],
+  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会', '飯田市美術博物館'],
   南信州: ['南信州ナビ'],
   高森町: ['高森町役場'],
   松川町: ['松川町役場'],
@@ -33,7 +33,7 @@ const REGION_SITES: Record<string, string[]> = {
   大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
 }
 
-// 全サイトリスト（25サイト）
+// 全サイトリスト（26サイト）
 const ALL_SITES = Object.values(REGION_SITES).flat()
 
 interface ScrapingLog {
@@ -123,7 +123,7 @@ export default function AllEventsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">全イベント</h1>
         <p className="text-gray-600">
-          全23サイトのイベント情報を確認できます（RSS 8サイト + HTML 15サイト）
+          全26サイトのイベント情報を確認できます（RSS 8サイト + HTML 18サイト）
         </p>
       </div>
 
@@ -154,7 +154,7 @@ export default function AllEventsPage() {
               >
                 <div className="text-sm text-white/90 font-medium mb-2">🌐 取得元サイト</div>
                 <div className="text-4xl font-bold text-white">
-                  {Object.values(siteCounts).filter((c) => c > 0).length} / 23
+                  {Object.values(siteCounts).filter((c) => c > 0).length} / 26
                 </div>
               </div>
               <div
