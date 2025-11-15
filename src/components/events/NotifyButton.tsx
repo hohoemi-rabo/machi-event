@@ -8,7 +8,7 @@ interface NotifyButtonProps {
   eventTitle: string
 }
 
-export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps) {
+export default function NotifyButton({ eventId }: NotifyButtonProps) {
   const [isReady, setIsReady] = useState(false)
   const [isNotifying, setIsNotifying] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -46,7 +46,7 @@ export default function NotifyButton({ eventId, eventTitle }: NotifyButtonProps)
         throw new Error(errorMsg)
       }
 
-      const data = await response.json()
+      await response.json()
       setMessage('✅ 通知設定が完了しました！開催前日の朝8時にLINEで通知が届きます。')
 
     } catch (error) {
