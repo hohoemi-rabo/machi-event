@@ -165,12 +165,12 @@ export default function AllEventsPage() {
                   <div
                     className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 rounded-full transition-all duration-1000 ease-out"
                     style={{
-                      width: `${Math.min((animatedEventCount / 602) * 100, 100)}%`,
+                      width: `${events.length > 0 ? Math.min((animatedEventCount / events.length) * 100, 100) : 0}%`,
                       boxShadow: '0 0 20px rgba(59, 130, 246, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)'
                     }}
                   ></div>
                 </div>
-                <div className="text-xs text-gray-400 mt-1 text-right">最大 602 件</div>
+                <div className="text-xs text-gray-400 mt-1 text-right">現在 {events.length} 件取得中</div>
               </div>
 
               {/* 取得元サイトバー */}
