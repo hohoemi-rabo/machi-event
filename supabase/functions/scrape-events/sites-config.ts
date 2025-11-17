@@ -1,5 +1,5 @@
 /**
- * 28サイトの設定
+ * 27サイトの設定
  * site-list.mdから作成
  */
 
@@ -69,7 +69,7 @@ export const SITES: SiteConfig[] = [
     type: 'rss'
   },
 
-  // ===== HTMLサイト (20サイト) =====
+  // ===== HTMLサイト (19サイト) =====
   {
     name: '南信州ナビ',
     url: 'https://msnav.com/events/',
@@ -284,6 +284,18 @@ export const SITES: SiteConfig[] = [
       title: 'h1.entry-title a',
       date: 'time.entry-date.published',
       link: 'h1.entry-title a'
+    }
+  },
+  {
+    name: '喜久水酒造',
+    url: 'https://kikusuisake.co.jp/news/',
+    region: '飯田市',
+    type: 'html',
+    selector: '#newsMainBox ul li',
+    fields: {
+      title: 'p',
+      date: 'date',
+      link: 'a'
     }
   }
 ]

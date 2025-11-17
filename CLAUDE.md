@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1-3完了（自動スクレイピング・Web UI・LINE連携）。Version 51: 全26サイト対応（飯田市に3サイト追加）、お問い合わせ機能実装（Resend）、プライバシーポリシー実装。LINE通知一時無効化。
+**プロジェクトステージ**: Phase 1-3完了（自動スクレイピング・Web UI・LINE連携）。Version 52: 全27サイト対応（飯田市に喜久水酒造を追加）、お問い合わせ機能実装（Resend）、プライバシーポリシー実装。LINE通知一時無効化。
 
 ## 技術スタック
 
@@ -92,7 +92,7 @@ supabase/functions/              # Supabase Edge Functions
   │   ├── retry.ts               # リトライロジック
   │   ├── structure-checker.ts   # 構造変更検知
   │   ├── alert.ts               # Slack通知
-  │   ├── sites-config.ts        # 26サイト設定（RSS 8 + HTML 18）
+  │   ├── sites-config.ts        # 27サイト設定（RSS 8 + HTML 19）
   │   ├── html-parser.ts         # HTMLパーサー
   │   ├── rss-parser.ts          # 正規表現ベースRSSパーサー（cheerio依存なし、RSS 1.0/2.0/Atom対応）
   │   └── date-utils.ts          # 日付パース
@@ -238,8 +238,8 @@ created_at: TIMESTAMP DEFAULT NOW()
 ## 主要機能要件
 
 ### フェーズ1: 基盤構築 ✅ 完全完了
-- **26サイトからの自動スクレイピング（RSS 8サイト、HTML 18サイト - 全設定完了）**
-  - 飯田市: 天龍峡温泉観光協会、遠山観光協会、飯田市美術博物館を追加（Version 51）
+- **27サイトからの自動スクレイピング（RSS 8サイト、HTML 19サイト - 全設定完了）**
+  - 飯田市: 喜久水酒造を追加（Version 52）
 - 1日1回深夜帯実行（Cron設定完了、GitHub Actions）
   - **自動スクレイピング**: 毎朝3:00 AM JST（18:00 UTC）実行
   - GitHub Actions Secrets: SUPABASE_ANON_KEY 設定済み
@@ -817,11 +817,12 @@ curl http://localhost:54321/functions/v1/scrape-events
   - **全削除→再登録方式**により常に最新状態を維持
 - ✅ スクレイピング基盤構築（`03-04`）
   - Edge Functions実装（11ファイル構成）
-  - **23サイト全設定完了（RSS 8 + HTML 15）**
+  - **27サイト全設定完了（RSS 8 + HTML 19）**
   - RSS 1.0 (RDF) 形式対応（`<dc:date>`要素）
   - RSS 2.0形式対応（`<pubDate>`要素）
   - 日本語日付パース機能（7パターン、年付き優先、YYYY.MM.DD対応）
-  - **HTMLサイト15/15完了**:
+  - **HTMLサイト19/19完了**:
+    - ✅ 飯田市: 天龍峡温泉観光協会、遠山観光協会、飯田市美術博物館、喜久水酒造
     - ✅ 南信州ナビ（region='南信州'）、阿智誘客促進協議会、天空の楽園
     - ✅ 阿智☆昼神観光局（地域/昼神観光局）
     - ✅ 根羽村役場、下条村観光協会
@@ -1278,11 +1279,11 @@ grep -r "\- \[×\]" docs/ | wc -l
   - 作業対象は machi-event プロジェクト（dpeeozdddgmjsnrgxdpz）のみ
 
 ### 開発上の注意
-- **スクレイピング対象**: 23サイト（飯田市および南信州エリア）
+- **スクレイピング対象**: 27サイト（飯田市および南信州エリア）
   - RSS形式: 8サイト（全設定完了）
-  - HTML形式: 15サイト（全設定完了）
+  - HTML形式: 19サイト（全設定完了）
   - 現在**571件**のイベントデータ（2025年11月14日時点）
-  - Edge Functions: **Version 48** デプロイ済み（2025年11月14日）
+  - Edge Functions: **Version 52** デプロイ済み（2025年11月17日）
   - **Version 46**: RSSタイムゾーンバグ修正（ISO 8601日付の1日ずれ解消）
   - **Version 47**: 並列処理実装（Promise.allSettled、504タイムアウトエラー解消）
   - **Version 48**: 全削除→再登録方式実装（RSSから消えたイベントも自動削除）
@@ -1327,3 +1328,174 @@ grep -r "\- \[×\]" docs/ | wc -l
   - Noto Sans JP フォント（日本語最適化）
   - ナビアイコン: 📅📆📋🔍、ロゴ: 📣
 - **初期目標**: LINE友だち登録20人、月間アクティブユーザー15人
+
+## スクレイピングサイト追加手順
+
+新しいサイトを追加する際は、以下の手順を**必ず全て**実行してください。
+
+### 1. sites-config.ts にサイト設定を追加
+
+**ファイル**: `/supabase/functions/scrape-events/sites-config.ts`
+
+```typescript
+// RSS形式の場合
+{
+  name: 'サイト名',
+  url: 'https://example.com/rss.xml',
+  region: '地域名',
+  type: 'rss'
+}
+
+// HTML形式の場合
+{
+  name: 'サイト名',
+  url: 'https://example.com/',
+  region: '地域名',
+  type: 'html',
+  selector: 'セレクタ',
+  fields: {
+    title: 'タイトルセレクタ',
+    date: '日付セレクタ',
+    link: 'リンクセレクタ'
+  }
+}
+```
+
+**重要**: サイト名の括弧は**半角 `()` を使用**すること（全角 `（）` は使用禁止）
+
+### 2. フロントエンドの3ファイルに追加
+
+**必ず以下の3ファイル全てに追加**:
+
+#### 2-1. `/src/app/all/page.tsx`（全イベントページ）
+```typescript
+const REGION_SITES: Record<string, string[]> = {
+  地域名: ['既存サイト1', '既存サイト2', '新サイト名'],
+  // ...
+}
+```
+
+#### 2-2. `/src/app/page.tsx`（トップページ・今週のイベント）
+```typescript
+const REGION_SITES: Record<string, string[]> = {
+  地域名: ['既存サイト1', '既存サイト2', '新サイト名'],
+  // ...
+}
+```
+
+#### 2-3. `/src/app/month/page.tsx`（今月のイベント）
+```typescript
+const REGION_SITES: Record<string, string[]> = {
+  地域名: ['既存サイト1', '既存サイト2', '新サイト名'],
+  // ...
+}
+```
+
+**重要**:
+- サイト名は**sites-config.tsと完全一致**させること
+- 括弧は**半角 `()` を統一**すること
+- 3ファイル全てで**同じ順序**で記載すること
+
+### 3. サイト数のカウントを更新
+
+以下の箇所のサイト数を更新:
+
+- `/src/app/all/page.tsx` 36行目: `// 全サイトリスト（XX サイト）`
+- `/src/app/all/page.tsx` 140行目: `全XXサイトのイベント情報を確認できます`
+- `/src/app/all/page.tsx` 181行目: `XX / XX サイト`（分母を更新）
+- `/src/app/all/page.tsx` 188行目: `width: ${(animatedSiteCount / XX) * 100}%`
+- `/src/app/all/page.tsx` 194行目: `成功率 {Math.round((animatedSiteCount / XX) * 100)}%`
+- `/supabase/functions/scrape-events/sites-config.ts` 2行目コメント: `XX サイトの設定`
+- `/supabase/functions/scrape-events/sites-config.ts` 72行目コメント: `HTMLサイト (XX サイト)`
+
+### 4. Supabase Edge Functions デプロイ
+
+**全11ファイル**をデプロイ:
+1. index.ts
+2. types.ts
+3. utils.ts
+4. error-types.ts
+5. retry.ts
+6. structure-checker.ts
+7. alert.ts
+8. **sites-config.ts** ← 更新済み
+9. html-parser.ts
+10. rss-parser.ts
+11. date-utils.ts
+
+```bash
+# Task subagent を使用してデプロイ
+mcp__supabase__deploy_edge_function
+```
+
+### 5. 動作確認
+
+1. **Supabase Dashboard で手動実行**
+   - Edge Functions → scrape-events → Invoke
+   - ログで新サイトが成功しているか確認
+
+2. **データベース確認**
+   ```sql
+   SELECT COUNT(*) FROM events WHERE source_site = '新サイト名';
+   ```
+
+3. **フロントエンド確認**
+   - http://localhost:3000/ （今週）
+   - http://localhost:3000/month （今月）
+   - http://localhost:3000/all （全イベント）
+   - 地域フィルターで該当地域を選択 → 新サイトボタンが表示されるか
+   - サイトフィルターで新サイトを選択 → イベントが表示されるか
+
+### 6. CLAUDE.md 更新
+
+以下の箇所を更新:
+- 9行目: Version番号とサイト追加内容
+- 95行目: サイト数（RSS X + HTML Y）
+- 241行目: サイト数
+- 820行目: サイト数
+- 825行目: HTMLサイトのリスト（飯田市の箇所など）
+- 1282行目: サイト数
+- 1286行目: Version番号とデプロイ日
+
+### チェックリスト
+
+サイト追加時は以下を確認:
+
+- [ ] sites-config.ts に追加（括弧は半角）
+- [ ] all/page.tsx に追加
+- [ ] page.tsx に追加
+- [ ] month/page.tsx に追加
+- [ ] 3ファイル全てでサイト名が一致
+- [ ] サイト数カウントを更新（5箇所）
+- [ ] Edge Functions デプロイ（全11ファイル）
+- [ ] Supabase Dashboard で手動実行
+- [ ] データベースにデータが入っているか確認
+- [ ] フロントエンド3ページで表示確認
+- [ ] CLAUDE.md 更新（7箇所）
+
+### よくあるミス
+
+❌ **括弧の形式不一致**
+- sites-config.ts: `平谷村役場(新着情報)` ← 半角
+- フロントエンド: `平谷村役場（新着情報）` ← 全角
+- → データベースとフロントエンドでマッチせず、件数が0になる
+
+❌ **フロントエンドへの追加漏れ**
+- sites-config.ts のみ更新して、3つのフロントエンドファイルを忘れる
+- → スクレイピングは成功するが、フロントエンドでサイトボタンが表示されない
+
+❌ **サイト数カウントの更新漏れ**
+- 「26/27サイト」のような不一致表示になる
+- → 全5箇所を必ず更新する
+
+❌ **デプロイファイル不足**
+- sites-config.ts のみアップロードして他のファイルを忘れる
+- → インポートエラーでデプロイ失敗
+
+### 追加時の所要時間目安
+
+- HTMLサイト設定: 5-10分
+- フロントエンド更新: 5分
+- デプロイ・動作確認: 10分
+- ドキュメント更新: 5分
+- **合計: 25-30分**

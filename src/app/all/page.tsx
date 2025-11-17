@@ -7,7 +7,7 @@ import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
 
 // 地域別サイトマッピング
 const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会', '飯田市美術博物館'],
+  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会', '飯田市美術博物館', '喜久水酒造'],
   南信州: ['南信州ナビ'],
   高森町: ['高森町役場'],
   松川町: ['松川町役場'],
@@ -15,25 +15,25 @@ const REGION_SITES: Record<string, string[]> = {
     '阿智村役場',
     '阿智誘客促進協議会',
     '天空の楽園',
-    '阿智☆昼神観光局（地域のお知らせ）',
-    '阿智☆昼神観光局（昼神観光局からのお知らせ）',
+    '阿智☆昼神観光局(地域のお知らせ)',
+    '阿智☆昼神観光局(昼神観光局からのお知らせ)',
   ],
-  平谷村: ['平谷村役場（新着情報）', '平谷村役場（イベント）'],
+  平谷村: ['平谷村役場(新着情報)', '平谷村役場(イベント)'],
   根羽村: ['根羽村役場'],
   下条村: ['下条村観光協会'],
   売木村: ['売木村役場', '売木村商工会'],
   天龍村: [
-    '天龍村役場（お知らせ）',
-    '天龍村役場（行政情報）',
-    '天龍村役場（観光情報）',
+    '天龍村役場(お知らせ)',
+    '天龍村役場(行政情報)',
+    '天龍村役場(観光情報)',
   ],
   泰阜村: ['泰阜村役場'],
   喬木村: ['喬木村役場'],
   豊丘村: ['豊丘村役場'],
-  大鹿村: ['大鹿村役場（お知らせ）', '大鹿村環境協会'],
+  大鹿村: ['大鹿村役場(お知らせ)', '大鹿村環境協会'],
 }
 
-// 全サイトリスト（26サイト）
+// 全サイトリスト（27サイト）
 const ALL_SITES = Object.values(REGION_SITES).flat()
 
 interface ScrapingLog {
@@ -137,7 +137,7 @@ export default function AllEventsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">全イベント</h1>
         <p className="text-gray-600">
-          全26サイトのイベント情報を確認できます
+          全27サイトのイベント情報を確認できます
         </p>
       </div>
 
@@ -178,20 +178,20 @@ export default function AllEventsPage() {
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-lg font-bold text-emerald-300 tracking-wider">🌐 取得元サイト</span>
                   <span className="text-2xl font-black text-white">
-                    {Object.values(siteCounts).filter((c) => c > 0).length} / 26 サイト
+                    {Object.values(siteCounts).filter((c) => c > 0).length} / 27 サイト
                   </span>
                 </div>
                 <div className="h-4 bg-gray-700/50 rounded-full overflow-hidden backdrop-blur-sm border border-emerald-500/30">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
                     style={{
-                      width: `${(animatedSiteCount / 26) * 100}%`,
+                      width: `${(animatedSiteCount / 27) * 100}%`,
                       boxShadow: '0 0 20px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)'
                     }}
                   ></div>
                 </div>
                 <div className="text-xs text-gray-400 mt-1 text-right">
-                  成功率 {Math.round((animatedSiteCount / 26) * 100)}%
+                  成功率 {Math.round((animatedSiteCount / 27) * 100)}%
                 </div>
               </div>
 
