@@ -156,14 +156,14 @@ export const SITES: SiteConfig[] = [
   },
   {
     name: '売木村役場',
-    url: 'https://www.urugi.jp/latest_news/',
+    url: 'https://www.urugi.jp/',
     region: '売木村',
     type: 'html',
-    selector: 'div#list a.entry-card-wrap',
+    selector: 'div#info-list div.info-list-item',
     fields: {
-      title: 'h2.entry-card-title',
-      date: 'span.entry-date',
-      link: '' // 親要素のa tagのhrefを使用
+      title: 'a.info-list-item-content-link',
+      date: 'span.info-list-item-date',
+      link: 'a.info-list-item-content-link'
     }
   },
   {
