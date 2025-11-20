@@ -32,6 +32,18 @@ export default function Header() {
             <ul className="flex gap-6">
               <li>
                 <Link
+                  href="/regions"
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
+                    pathname?.startsWith('/regions')
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
+                  }`}
+                >
+                  🏠 ホーム
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/"
                   className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
                     isActive('/')
@@ -163,6 +175,19 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden mt-4 space-y-2 border-t border-white/30 pt-4">
             <ul className="space-y-2">
+              <li>
+                <Link
+                  href="/regions"
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
+                    pathname?.startsWith('/regions')
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🏠 ホーム
+                </Link>
+              </li>
               <li>
                 <Link
                   href="/"

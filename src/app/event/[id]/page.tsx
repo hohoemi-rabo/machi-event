@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
 import { formatDate } from '@/lib/utils/date'
-import { getRegionColor, getRegionLightBg } from '@/lib/utils/colors'
-import ShareButtons from '@/components/events/ShareButtons'
-// import NotifyButton from '@/components/events/NotifyButton' // 一時的に無効化
-import EventCard from '@/components/events/EventCard'
+import { getRegionColor } from '@/lib/utils/colors'
+import BackButton from '@/components/ui/BackButton'
 import type { Metadata } from 'next'
 
 // 1時間ごとに再生成
@@ -52,157 +49,100 @@ export default async function EventDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  // 関連イベント（同じ地域の近い日付）
-  const { data: relatedEvents } = await supabase
-    .from('events')
-    .select('*')
-    .eq('region', event.region)
-    .neq('id', event.id)
-    .gte('event_date', event.event_date)
-    .order('event_date', { ascending: true })
-    .order('event_time', { ascending: true })
-    .limit(3)
-
   const regionColor = getRegionColor(event.region)
-  const lightBg = getRegionLightBg(event.region)
 
-  // 未来のイベント かつ 登録から7日以内かを判定
+  // NEWバッジ判定（未来のイベント かつ 登録から7日以内）
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const eventDate = new Date(event.event_date)
   eventDate.setHours(0, 0, 0, 0)
   const createdAt = new Date(event.created_at)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-
   const isNew = eventDate >= today && createdAt > sevenDaysAgo
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Link
-        href="/"
-        className="inline-flex items-center font-medium mb-6 transition-all hover:opacity-80 px-4 py-2 rounded-lg"
-        style={{
-          background: 'linear-gradient(135deg, #B19CD9 0%, #9370DB 50%, #8B5CF6 100%)',
-          color: '#FFFFFF'
-        }}
-      >
-        ← 一覧に戻る
-      </Link>
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+      {/* 戻るボタン */}
+      <BackButton />
 
-      <div
-        className="rounded-xl shadow-xl p-8 max-w-4xl mx-auto border-2"
-        style={{
-          backgroundColor: lightBg,
-          borderColor: regionColor.bg
-        }}
-      >
-        {event.image_url && (
-          <div className="relative w-full h-96 mb-6">
-            <Image
-              src={event.image_url}
-              alt={event.title}
-              fill
-              className="object-cover rounded-xl shadow-lg"
-            />
-          </div>
-        )}
-
-        <div className="flex justify-between items-center mb-6">
+      {/* ヘッダー */}
+      <div className="bg-gray-200 rounded-lg p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
           <span
-            className="text-sm px-3 py-2 rounded-lg font-medium shadow-md"
+            className="text-xs px-2 py-1 rounded font-medium"
             style={{
               backgroundColor: regionColor.bg,
               color: regionColor.text
             }}
           >
-            {event.region}
+            📍 {event.region}
           </span>
           {isNew && (
-            <span
-              className="text-white text-sm px-3 py-2 rounded-lg font-bold new-badge-rainbow shadow-md"
-              style={{
-                textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)'
-              }}
-            >
+            <span className="new-badge-rainbow px-2 py-1 rounded text-xs font-bold text-white">
               NEW
             </span>
           )}
         </div>
 
-        <h1 className="text-3xl font-bold mb-6 text-gray-900">{event.title}</h1>
-
-        <div className="space-y-3 mb-6 text-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📅</span>
-            <span className="text-lg">{formatDate(event.event_date)}</span>
-          </div>
-          {event.event_time && (
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🕐</span>
-              <span className="text-lg">{event.event_time}</span>
-            </div>
-          )}
-          {event.place && (
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📍</span>
-              <span className="text-lg">{event.place}</span>
-            </div>
-          )}
+        {/* 日付とタイトル */}
+        <div className="mb-3">
+          <p className="text-base text-gray-700 font-medium mb-2">
+            {formatDate(event.event_date)}
+            {event.event_time && ` ${event.event_time}`}
+          </p>
+          <h1 className="text-2xl font-bold text-gray-900 leading-relaxed">
+            {event.title}
+          </h1>
         </div>
 
-        {event.detail && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
-              📝 詳細情報
-            </h2>
-            <div className="bg-white/80 rounded-lg p-4 shadow-sm">
-              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{event.detail}</p>
-            </div>
-          </div>
+        {event.place && (
+          <p className="text-sm text-gray-700">
+            📍 場所: {event.place}
+          </p>
         )}
-
-        <div className="mb-8">
-          <a
-            href={event.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-white px-8 py-4 rounded-xl font-bold transition-all hover:shadow-xl hover:-translate-y-0.5 shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)'
-            }}
-          >
-            🔗 公式サイトで詳細を見る →
-          </a>
-        </div>
-
-        <ShareButtons event={event} />
-
-        {/* LINE通知機能は一時的に無効化 */}
-        {/* <NotifyButton eventId={event.id} eventTitle={event.title} /> */}
-
-        <p
-          className="text-sm mt-8 pt-6 border-t-2 font-medium"
-          style={{
-            borderColor: regionColor.bg,
-            color: regionColor.bg
-          }}
-        >
-          📌 情報元: {event.source_site}
-        </p>
       </div>
 
-      {relatedEvents && relatedEvents.length > 0 && (
-        <div className="mt-12 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2">
-            🔄 関連イベント
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {relatedEvents.map((relatedEvent) => (
-              <EventCard key={relatedEvent.id} event={relatedEvent} />
-            ))}
-          </div>
+      {/* 画像 */}
+      {event.image_url && (
+        <div className="relative w-full h-64 mb-6 rounded-lg overflow-hidden">
+          <Image
+            src={event.image_url}
+            alt={event.title}
+            fill
+            className="object-cover"
+          />
         </div>
       )}
+
+      {/* 本文 */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {event.detail ? (
+          <p className="whitespace-pre-wrap text-gray-900 leading-loose text-base">
+            {event.detail}
+          </p>
+        ) : (
+          <p className="text-gray-500 text-center py-4">
+            詳細情報はありません
+          </p>
+        )}
+      </div>
+
+      {/* 公式サイトリンク */}
+      <div className="mb-6">
+        <a
+          href={event.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center px-6 py-4 rounded-lg font-medium transition-colors"
+        >
+          🔗 公式サイトで詳細を見る
+        </a>
+      </div>
+
+      {/* 情報元 */}
+      <div className="text-sm text-gray-600 text-center border-t pt-4">
+        情報元: {event.source_site}
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MobileFooter from "@/components/layout/MobileFooter";
 import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 
 const geistSans = Geist({
@@ -36,8 +37,13 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${geistSans.variable} ${geistMono.variable} ${notoSansJP.variable} antialiased flex flex-col min-h-screen`}>
         <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <main className="flex-1 pb-24 lg:pb-0">{children}</main>
+        {/* PC時のみ表示 */}
+        <div className="hidden lg:block">
+          <Footer />
+        </div>
+        {/* モバイル・タブレット時のみ表示 */}
+        <MobileFooter />
         <ScrollToTopButton />
       </body>
     </html>

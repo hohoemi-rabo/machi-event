@@ -1,133 +1,79 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import EventCard from '@/components/events/EventCard'
-import type { Event } from '@/types/event'
 import { getRegionColor } from '@/lib/utils/colors'
 
-// 地域別サイトマッピング
-const REGION_SITES: Record<string, string[]> = {
-  飯田市: ['飯田市役所', '天龍峡温泉観光協会', '遠山観光協会', '飯田市美術博物館', '喜久水酒造'],
-  南信州: ['南信州ナビ'],
-  高森町: ['高森町役場'],
-  松川町: ['松川町役場'],
-  阿智村: [
-    '阿智村役場',
-    '阿智誘客促進協議会',
-    '天空の楽園',
-    '阿智☆昼神観光局(地域のお知らせ)',
-    '阿智☆昼神観光局(昼神観光局からのお知らせ)',
-  ],
-  平谷村: ['平谷村役場(新着情報)', '平谷村役場(イベント)'],
-  根羽村: ['根羽村役場'],
-  下条村: ['下条村観光協会'],
-  売木村: ['売木村役場', '売木村商工会'],
-  天龍村: [
-    '天龍村役場(お知らせ)',
-    '天龍村役場(行政情報)',
-    '天龍村役場(観光情報)',
-  ],
-  泰阜村: ['泰阜村役場'],
-  喬木村: ['喬木村役場'],
-  豊丘村: ['豊丘村役場'],
-  大鹿村: ['大鹿村役場(お知らせ)', '大鹿村環境協会'],
-}
+// 地域リスト
+const REGIONS = [
+  '飯田市',
+  '南信州',
+  '高森町',
+  '松川町',
+  '阿智村',
+  '平谷村',
+  '根羽村',
+  '下条村',
+  '売木村',
+  '天龍村',
+  '泰阜村',
+  '喬木村',
+  '豊丘村',
+  '大鹿村',
+]
 
-// 今月の日付範囲を取得（YYYY-MM-DD形式の文字列で返す）
+// 今月の日付範囲を取得
 function getMonthRange() {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth()
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
 
-  // 今月の1日
   const startDate = new Date(year, month, 1)
-  const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`
-
-  // 今月の末日
   const endDate = new Date(year, month + 1, 0)
-  const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
 
-  return {
-    start: startDate,
-    end: endDate,
-    startStr,
-    endStr,
-    monthName: startDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
-  }
+  const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+  const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+
+  return { startStr, endStr }
 }
 
-export default function MonthPage() {
-  const [allEvents, setAllEvents] = useState<Event[]>([])
-  const [selectedRegion, setSelectedRegion] = useState<string>('飯田市')
-  const [selectedSite, setSelectedSite] = useState<string>('飯田市役所')
+export default function MonthRegionsPage() {
+  const [regionCounts, setRegionCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
-  const [siteCounts, setSiteCounts] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      const { startStr, endStr } = getMonthRange()
+    const fetchRegionCounts = async () => {
       const supabase = createClient()
+      const { startStr, endStr } = getMonthRange()
+
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('region')
         .gte('event_date', startStr)
         .lte('event_date', endStr)
-        .order('event_date', { ascending: true })
-        .order('event_time', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching events:', error)
-        setLoading(false)
-        return
+      if (!error && data) {
+        // 地域ごとにイベント数をカウント
+        const counts: Record<string, number> = {}
+        data.forEach((event) => {
+          const region = event.region || '不明'
+          counts[region] = (counts[region] || 0) + 1
+        })
+        setRegionCounts(counts)
       }
-
-      setAllEvents(data || [])
-
-      // 各サイトのイベント件数をカウント（今月のイベントのみ）
-      const counts: Record<string, number> = {}
-      const allSites = Object.values(REGION_SITES).flat()
-      allSites.forEach((site) => {
-        counts[site] = (data || []).filter((e) => e.source_site === site).length
-      })
-      setSiteCounts(counts)
       setLoading(false)
     }
 
-    fetchEvents()
+    fetchRegionCounts()
   }, [])
-
-  // 地域選択時の処理
-  const handleRegionSelect = (region: string) => {
-    setSelectedRegion(region)
-    // その地域の最初のサイトを選択（0件でないサイトを優先）
-    const sitesInRegion = REGION_SITES[region]
-    const firstSiteWithEvents = sitesInRegion.find(
-      (site) => (siteCounts[site] || 0) > 0
-    )
-    setSelectedSite(firstSiteWithEvents || sitesInRegion[0])
-  }
-
-  // 地域ごとのイベント件数合計を計算
-  const getRegionCount = (region: string) => {
-    return REGION_SITES[region].reduce(
-      (sum, site) => sum + (siteCounts[site] || 0),
-      0
-    )
-  }
-
-  // 選択したサイトの今月のイベントのみフィルタリング
-  const filteredEvents = allEvents.filter((e) => e.source_site === selectedSite)
-
-  // 表示用の月名
-  const { monthName } = getMonthRange()
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* ヘッダー */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">今月のイベント</h1>
-        <p className="text-gray-600">{monthName}</p>
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-2">📆 今月のイベント - 地域を選択</h1>
+        <p className="text-gray-600">イベント情報を見たい地域を選んでください</p>
       </div>
 
       {loading ? (
@@ -135,100 +81,47 @@ export default function MonthPage() {
           <p className="text-gray-600">読み込み中...</p>
         </div>
       ) : (
-        <>
-          {/* 第1段階: 地域フィルター */}
-          <div className="bg-white rounded-lg shadow p-6 mb-4">
-            <h2 className="text-lg font-semibold mb-4">地域選択</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-              {Object.keys(REGION_SITES).map((region) => {
-                const count = getRegionCount(region)
-                const isSelected = selectedRegion === region
-                const regionColor = getRegionColor(region)
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {REGIONS.map((region) => {
+            const regionColor = getRegionColor(region)
+            const count = regionCounts[region] || 0
 
-                return (
-                  <button
-                    key={region}
-                    onClick={() => handleRegionSelect(region)}
-                    className="px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md"
-                    style={{
-                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
-                      color: isSelected ? regionColor.text : '#374151',
-                      opacity: isSelected ? 1 : 0.8,
-                      '--hover-bg': regionColor.bg,
-                      '--hover-text': regionColor.text,
-                    } as React.CSSProperties & { '--hover-bg': string; '--hover-text': string }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = regionColor.bg
-                        e.currentTarget.style.color = regionColor.text
-                        e.currentTarget.style.opacity = '0.9'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = '#F3F4F6'
-                        e.currentTarget.style.color = '#374151'
-                        e.currentTarget.style.opacity = '0.8'
-                      }
-                    }}
-                  >
-                    <div className="truncate">{region} [{count}]</div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+            return (
+              <Link
+                key={region}
+                href={`/month/${encodeURIComponent(region)}`}
+                className="block rounded-lg p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative overflow-hidden group"
+                style={{
+                  backgroundColor: regionColor.bg,
+                  color: regionColor.text,
+                  minHeight: '140px'
+                }}
+              >
+                {/* ホバーエフェクト */}
+                <div
+                  className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ pointerEvents: 'none' }}
+                ></div>
 
-          {/* 第2段階: サイトフィルター */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">
-              {selectedRegion}のサイト（
-              {REGION_SITES[selectedRegion].length}
-              サイト）
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {REGION_SITES[selectedRegion].map((site) => {
-                const count = siteCounts[site] || 0
-                const isSelected = selectedSite === site
-                const regionColor = getRegionColor(selectedRegion)
+                <div className="relative z-10">
+                  {/* 地域名 */}
+                  <div className="text-2xl font-bold mb-3">{region}</div>
 
-                return (
-                  <button
-                    key={site}
-                    onClick={() => setSelectedSite(site)}
-                    className="px-3 py-2 rounded-md text-sm font-medium transition-all hover:shadow-md"
-                    style={{
-                      backgroundColor: isSelected ? regionColor.bg : '#F3F4F6',
-                      color: isSelected ? regionColor.text : '#374151',
-                    }}
-                  >
-                    <div className="truncate">{site} [{count}]</div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+                  {/* イベント件数 */}
+                  <div className="flex items-center justify-center gap-1 text-sm opacity-90">
+                    <span>📍</span>
+                    <span className="font-semibold">{count}件</span>
+                  </div>
 
-          {/* イベント一覧（カード形式） */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">
-              {selectedSite} のイベント（{filteredEvents.length}件）
-            </h2>
-
-            {filteredEvents.length === 0 ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <p className="text-gray-500 text-lg">このサイトの今月のイベントはありません</p>
-                <p className="text-gray-400 text-sm mt-2">来月のイベントをお楽しみに</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+                  {/* タップ案内 */}
+                  <div className="mt-3 text-xs opacity-75">
+                    タップして選択 →
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       )}
     </div>
   )

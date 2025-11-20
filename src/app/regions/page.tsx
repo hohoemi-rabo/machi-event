@@ -23,37 +23,16 @@ const REGIONS = [
   '大鹿村',
 ]
 
-// 今週の日付範囲を取得
-function getWeekRange() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = today.getMonth()
-  const date = today.getDate()
-  const dayOfWeek = today.getDay()
-
-  const startDate = new Date(year, month, date - dayOfWeek)
-  const endDate = new Date(year, month, date - dayOfWeek + 6)
-
-  const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
-  const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
-
-  return { startStr, endStr }
-}
-
-export default function WeekRegionsPage() {
+export default function RegionsPage() {
   const [regionCounts, setRegionCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchRegionCounts = async () => {
       const supabase = createClient()
-      const { startStr, endStr } = getWeekRange()
-
       const { data, error } = await supabase
         .from('events')
         .select('region')
-        .gte('event_date', startStr)
-        .lte('event_date', endStr)
 
       if (!error && data) {
         // 地域ごとにイベント数をカウント
@@ -74,7 +53,7 @@ export default function WeekRegionsPage() {
     <div className="container mx-auto px-4 py-8">
       {/* ヘッダー */}
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">📅 今週のイベント - 地域を選択</h1>
+        <h1 className="text-3xl font-bold mb-2">地域を選択</h1>
         <p className="text-gray-600">イベント情報を見たい地域を選んでください</p>
       </div>
 
@@ -91,7 +70,7 @@ export default function WeekRegionsPage() {
             return (
               <Link
                 key={region}
-                href={`/week/${encodeURIComponent(region)}`}
+                href={`/regions/${encodeURIComponent(region)}`}
                 className="block rounded-lg p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative overflow-hidden group"
                 style={{
                   backgroundColor: regionColor.bg,
