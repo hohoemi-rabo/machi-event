@@ -32,9 +32,9 @@ export default function Header() {
             <ul className="flex gap-6">
               <li>
                 <Link
-                  href="/regions"
+                  href="/"
                   className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
-                    pathname?.startsWith('/regions')
+                    isActive('/') || pathname?.startsWith('/week')
                       ? 'text-white font-bold bg-white/20 shadow-lg'
                       : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -44,21 +44,9 @@ export default function Header() {
               </li>
               <li>
                 <Link
-                  href="/"
-                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
-                    isActive('/')
-                      ? 'text-white font-bold bg-white/20 shadow-lg'
-                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
-                  }`}
-                >
-                  📅 今週
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/month"
                   className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
-                    isActive('/month')
+                    isActive('/month') || pathname?.startsWith('/month')
                       ? 'text-white font-bold bg-white/20 shadow-lg'
                       : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -68,9 +56,9 @@ export default function Header() {
               </li>
               <li>
                 <Link
-                  href="/all"
+                  href="/regions"
                   className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
-                    isActive('/all')
+                    pathname?.startsWith('/regions')
                       ? 'text-white font-bold bg-white/20 shadow-lg'
                       : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -88,6 +76,18 @@ export default function Header() {
                   }`}
                 >
                   🔍 検索
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/status"
+                  className={`px-3 py-2 rounded-md transition-all duration-300 font-medium ${
+                    isActive('/status')
+                      ? 'text-white font-bold bg-white/20 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
+                  }`}
+                >
+                  📊 更新状況
                 </Link>
               </li>
               <li>
@@ -177,9 +177,9 @@ export default function Header() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/regions"
+                  href="/"
                   className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
-                    pathname?.startsWith('/regions')
+                    isActive('/') || pathname?.startsWith('/week')
                       ? 'bg-white/30 font-bold shadow-lg'
                       : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -190,22 +190,9 @@ export default function Header() {
               </li>
               <li>
                 <Link
-                  href="/"
-                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
-                    isActive('/')
-                      ? 'bg-white/30 font-bold shadow-lg'
-                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  📅 今週
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/month"
                   className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
-                    isActive('/month')
+                    isActive('/month') || pathname?.startsWith('/month')
                       ? 'bg-white/30 font-bold shadow-lg'
                       : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -216,9 +203,9 @@ export default function Header() {
               </li>
               <li>
                 <Link
-                  href="/all"
+                  href="/regions"
                   className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
-                    isActive('/all')
+                    pathname?.startsWith('/regions')
                       ? 'bg-white/30 font-bold shadow-lg'
                       : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
                   }`}
@@ -238,6 +225,19 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   🔍 検索
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/status"
+                  className={`block py-3 px-4 rounded-md transition-all duration-300 text-white ${
+                    isActive('/status')
+                      ? 'bg-white/30 font-bold shadow-lg'
+                      : 'hover:bg-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  📊 更新状況
                 </Link>
               </li>
               <li>

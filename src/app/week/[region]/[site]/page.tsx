@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/types/event'
 import { getRegionColor } from '@/lib/utils/colors'
@@ -96,9 +95,11 @@ export default function WeekSiteEventsPage() {
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {events.map((event, index) => (
-            <Link
+            <a
               key={event.id}
-              href={`/event/${event.id}`}
+              href={event.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="block hover:bg-gray-50 transition-colors active:bg-gray-100"
             >
               <div
@@ -139,7 +140,7 @@ export default function WeekSiteEventsPage() {
                   {event.title}
                 </div>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       )}

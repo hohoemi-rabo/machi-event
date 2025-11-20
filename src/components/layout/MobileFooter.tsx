@@ -11,7 +11,7 @@ export default function MobileFooter() {
       <div className="flex">
         {/* ホームボタン */}
         <Link
-          href="/regions"
+          href="/"
           className="flex-1 flex flex-col items-center justify-center py-4 hover:bg-gray-100 active:bg-gray-200 transition-colors border-r border-gray-300"
         >
           <span className="text-2xl mb-1">🏠</span>
