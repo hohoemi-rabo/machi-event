@@ -53,13 +53,13 @@ export default function MonthSiteEventsPage() {
     fetchEvents()
   }, [site])
 
-  // NEWバッジ判定（登録7日以内かつ未来のイベント）
+  // NEWバッジ判定（投稿日が直近3日以内）
   const isNewEvent = (event: Event) => {
-    const now = new Date()
-    const createdAt = new Date(event.created_at)
     const eventDate = new Date(event.event_date)
-    const daysSinceCreated = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
-    return daysSinceCreated <= 7 && eventDate >= now
+    const threeDaysAgo = new Date()
+    threeDaysAgo.setHours(0, 0, 0, 0)
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+    return eventDate >= threeDaysAgo
   }
 
   if (loading) {

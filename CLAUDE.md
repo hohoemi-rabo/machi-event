@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 南信州地域のイベント情報を一元化する情報集約サービス。複数の情報源に散在するイベント情報を自動収集し、ユーザーに「探さなくていい状態」を提供する。
 
-**プロジェクトステージ**: Phase 1-4完了（自動スクレイピング・Web UI・LINE連携・UI大幅リニューアル）。Version 52: 全27サイト対応（飯田市に喜久水酒造を追加）、お問い合わせ機能実装（Resend）、プライバシーポリシー実装。**Phase 4**: 新UI実装完了（カード型地域/サイト選択、リスト型イベント一覧、詳細ページ削除で直接公式サイトリンク、更新状況ページ追加）。LINE通知一時無効化。
+**プロジェクトステージ**: Phase 1-4完了（自動スクレイピング・Web UI・LINE連携・UI大幅リニューアル）。Version 52: 全27サイト対応（飯田市に喜久水酒造を追加）、お問い合わせ機能実装（Resend）、プライバシーポリシー実装。**Phase 4**: 新UI実装完了（カード型地域/サイト選択、リスト型イベント一覧、詳細ページ削除で直接公式サイトリンク、更新状況ページ追加）。LINE通知一時無効化。**2025年12月15日更新**: Next.js 15.5.7へアップグレード、検索ページ修正（EventCardから直接公式サイトリンク）、NEWバッジ条件変更（投稿日が直近3日以内）。
 
 ## 技術スタック
 
-- **フレームワーク**: Next.js 15.5.6 (App Router)
+- **フレームワーク**: Next.js 15.5.7 (App Router)
 - **言語**: TypeScript
 - **UI**: React 19.1.0
 - **スタイリング**: Tailwind CSS 3.4.17
@@ -92,7 +92,7 @@ src/
   │   │   ├── Footer.tsx         # フッター（紫グラデーション、SNSリンク、プライバシーポリシー）
   │   │   └── MobileFooter.tsx   # モバイルフッター（ホーム・戻るボタン、固定配置）
   │   ├── events/
-  │   │   ├── EventCard.tsx      # イベントカード（地域色背景、NEWバッジ虹色・右端配置）
+  │   │   ├── EventCard.tsx      # イベントカード（地域色背景、NEWバッジ虹色・右端配置、直接公式サイトリンク）
   │   │   ├── EventFilters.tsx   # フィルター（検索ページ用、ドロップダウン）
   │   │   ├── RegionFilter.tsx   # 地域フィルター（トップページ用）
   │   │   ├── ShareButtons.tsx   # シェアボタン（LINE/X/Instagram/URL）
@@ -191,7 +191,7 @@ API層 (Supabase Edge Functions)
 ```sql
 id: UUID (PK)
 title: TEXT NOT NULL
-event_date: DATE NOT NULL
+event_date: DATE NOT NULL          -- ※実際は投稿日（各サイトの掲載日）
 event_time: TEXT
 place: TEXT
 detail: TEXT
@@ -203,6 +203,8 @@ is_new: BOOLEAN DEFAULT true
 created_at: TIMESTAMP
 updated_at: TIMESTAMP
 ```
+
+**注**: `event_date`は「開催日」ではなく「投稿日」（各サイトの掲載日）を格納。理由は各サイトで開催日の記載位置・形式が異なり、正確な抽出が困難なため。NEWバッジ判定もこの投稿日を基準にしている（直近3日以内）。
 
 ### scraping_logsテーブル
 ```sql
@@ -314,7 +316,7 @@ created_at: TIMESTAMP DEFAULT NOW()
   - 0件のサイトも表示（グレー表示）
 - **イベント一覧UI**
   - リスト型レイアウト（白背景、シャドウ付き）
-  - NEWバッジ: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション、右端配置
+  - NEWバッジ: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション、右端配置（投稿日が直近3日以内）
   - 地域色バッジ（右端配置）
   - 日付表示（YYYY/MM/DD形式）
   - ホバー効果（bg-gray-50）
@@ -464,7 +466,7 @@ created_at: TIMESTAMP DEFAULT NOW()
 ### デザインシステム
 - **ヘッダー/フッター**: 紫グラデーション（Lavender → Purple → Violet）
 - **地域色**: 14地域それぞれに固有の色（Crimson, Gold, Lavender等）
-- **NEWバッジ**: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション
+- **NEWバッジ**: 虹色グラデーション（赤→黄→緑→青）+ レインボーアニメーション（投稿日が直近3日以内）
 - **ホバー効果**: 地域ボタン（地域色へフェード）、ナビメニュー（白グロー）
 - **アニメーション**: `@keyframes rainbow-flow`（3秒周期で虹色が流れる）
 
@@ -972,7 +974,7 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 全イベント（/regions、/regions/[region]、/regions/[region]/[site]）
   - イベント一覧から直接公式サイトにリンク（target="_blank"）
   - 詳細ページ削除（/event.backup/[id]にバックアップ）
-  - NEWバッジ: 虹色グラデーション、右端配置
+  - NEWバッジ: 虹色グラデーション、右端配置（投稿日が直近3日以内）
   - 地域色バッジ: 右端配置
   - レスポンシブグリッドレイアウト
   - 旧UI（2段階フィルター）はバックアップ
@@ -1039,7 +1041,7 @@ curl http://localhost:54321/functions/v1/scrape-events
   - 通知登録API（/api/notifications）
   - Android/iPhone 動作確認済み
 - ✅ GitHub Actions Cron設定（毎朝8時JST）
-- ✅ NEWバッジロジック修正（未来イベント＋登録7日以内）
+- ✅ NEWバッジロジック修正（投稿日が直近3日以内）
 
 **現在の状態：**
 - 🔄 **NotifyButton一時無効化**（全削除→再登録方式を優先）
@@ -1481,7 +1483,7 @@ grep -r "\- \[×\]" docs/ | wc -l
 - **UI実装**:
   - 2段階フィルター（地域→サイト）
   - 地域色ベースのデザイン統一（14地域固有色）
-  - NEWバッジ: 虹色グラデーション、右端配置、レインボーアニメーション
+  - NEWバッジ: 虹色グラデーション、右端配置、レインボーアニメーション（投稿日が直近3日以内）
   - ヘッダー/フッター: 紫グラデーション（Lavender → Purple → Violet）
   - 地域ボタン: ホバー時に地域色へフェード
   - ナビメニュー: 白グロー効果（ホバー時）

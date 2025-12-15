@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import type { Event } from '@/types/event'
 import { formatDateShort } from '@/lib/utils/date'
@@ -12,18 +11,16 @@ export default function EventCard({ event }: EventCardProps) {
   const regionColor = getRegionColor(event.region)
   const lightBg = getRegionLightBg(event.region)
 
-  // 未来のイベント かつ 登録から7日以内かを判定
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // 投稿日（event_date）が直近3日以内かを判定
   const eventDate = new Date(event.event_date)
-  eventDate.setHours(0, 0, 0, 0)
-  const createdAt = new Date(event.created_at)
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const threeDaysAgo = new Date()
+  threeDaysAgo.setHours(0, 0, 0, 0)
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
 
-  const isNew = eventDate >= today && createdAt > sevenDaysAgo
+  const isNew = eventDate >= threeDaysAgo
 
   return (
-    <Link href={`/event/${event.id}`} className="block cursor-pointer">
+    <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
       <div
         className="rounded-lg shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 p-4 h-full border border-gray-100"
         style={{ backgroundColor: lightBg }}
@@ -75,6 +72,6 @@ export default function EventCard({ event }: EventCardProps) {
           情報元: {event.source_site}
         </p>
       </div>
-    </Link>
+    </a>
   )
 }
